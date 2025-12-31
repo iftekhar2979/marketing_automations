@@ -1,14 +1,14 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { ClassSerializerInterceptor, INestApplication, ValidationPipe } from "@nestjs/common";
 import { MailerService } from "@nestjs-modules/mailer";
-import { DataSource } from "typeorm";
-import request from "supertest";
-import { AuthModule } from "../auth.module";
-import { PostgreSQLDatabaseModule } from "../../database/postgresql.module";
+import { ClassSerializerInterceptor, INestApplication, ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { mockConfigService, mockMailerService } from "../../../test/mocks";
-import { CreateUserDto } from "../dto/create-user.dto";
 import { Reflector } from "@nestjs/core";
+import { Test, TestingModule } from "@nestjs/testing";
+import request from "supertest";
+import { DataSource } from "typeorm";
+import { mockConfigService, mockMailerService } from "../../../test/mocks";
+import { PostgreSQLDatabaseModule } from "../../database/postgresql.module";
+import { AuthModule } from "../auth.module";
+import { CreateUserDto } from "../dto/create-user.dto";
 
 describe("AuthController (e2e)", () => {
   let app: INestApplication;
@@ -66,8 +66,6 @@ describe("AuthController (e2e)", () => {
       lastName: "last name",
       email: "test@mail.com",
       password: "Password@123",
-      address: "Dhaka",
-      currency: "GBM",
       phone: "+8801837352979",
     };
 

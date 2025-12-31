@@ -5,8 +5,6 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
-  OneToMany,
-  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
@@ -27,9 +25,6 @@ export class User {
   @PrimaryGeneratedColumn("uuid")
   @ApiProperty()
   id: string;
-  @Column({ unique: true, default: null })
-  @Exclude({ toPlainOnly: true })
-  googleID: string;
 
   @Column({ length: 50 })
   @ApiProperty()
@@ -47,12 +42,16 @@ export class User {
   @ApiProperty()
   status: USERSTATUS.NOT_VERIFIED;
   @Column({ nullable: true })
-  @Exclude({ toPlainOnly: true })
+  @Column({ nullable: true, select: false }) // Critical: Never select by default
+  @Exclude()
   password: string;
+
   @Column({ nullable: true, type: "varchar" })
   fcm: string;
   @Column({ nullable: true, type: "varchar" })
   phone: string;
+  @Column({ nullable: true, type: "varchar" })
+  current_refresh_token: string;
 
   @Column("enum", { array: true, enum: UserRoles, default: `{${UserRoles.USER}}` })
   @ApiProperty({
@@ -77,5 +76,4 @@ export class User {
   @DeleteDateColumn()
   @ApiProperty()
   deletedAt: Date;
-
 }

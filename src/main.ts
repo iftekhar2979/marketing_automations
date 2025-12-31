@@ -6,7 +6,7 @@ import { ConfigService } from "@nestjs/config";
 import compression from "compression";
 import cookieParser from "cookie-parser";
 import csurf from "csurf";
-import { json, urlencoded } from "express";
+import { urlencoded } from "express";
 import helmet from "helmet";
 import hpp from "hpp";
 import xssClean from "xss-clean";
@@ -33,6 +33,7 @@ async function bootstrap() {
   // Run Auto Migrations
   await runMigrations(dataSource, false); // Set to true to exit on migration failure
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter(), {
+    bodyParser: true,
     cors: true,
     logger: ["error", "fatal", "log", "verbose", "warn", "debug"],
   });
@@ -74,7 +75,7 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(compression());
 
-  app.use(json({ limit: "50kb" }));
+  // app.use(json({ limit: "50kb" }));
   app.use(urlencoded({ extended: true, limit: "50kb" }));
 
   // app.disable("x-powered-by"); // provide an extra layer of obsecurity to reduce server fingerprinting.

@@ -1,13 +1,13 @@
-import { Processor, Process } from "@nestjs/bull";
-import { Job } from "bull";
+import { Process, Processor } from "@nestjs/bull";
 import { Injectable } from "@nestjs/common";
+import { Job } from "bull";
 
 import { FirebaseService } from "src/firebase/firebase.service";
+import { MailService } from "src/mail/mail.service";
 import { NotificationsService } from "src/notifications/notifications.service";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
 import { Logger } from "winston";
-import { MultipleNotificationPayload, NotificationJobPayload, SinglePushNotificationPayload } from "./types";
-import { MailService } from "src/mail/mail.service";
+import { SinglePushNotificationPayload } from "./types";
 
 @Processor("notifications") // Processor listening to 'ProductQueue'
 @Injectable()
@@ -28,50 +28,51 @@ export class PushNotificationProccessor {
     await this._firebaseService.sendPushNotification(token, title, body);
   }
 
-  @Process("notification_saver")
-  async notificationSaver(job: Job<NotificationJobPayload>) {
-    this._logger.log("Notification Saver Job started", job.data);
-    console.log("Notification ", job.data);
-    const { user, action, msg, isImportant, related, targetId, notificationFor } = job.data;
+  // @Process("notification_saver")
+  // async notificationSaver(job: Job<NotificationJobPayload>) {
+  //   this._logger.log("Notification Saver Job started", job.data);
+  //   console.log("Notification ", job.data);
+  //   const { recepient, actor, action, msg, isImportant, related, targetId, notificationFor } = job.data;
 
-    await this._notificationsService.createNotification({
-      userId: user.id,
-      action,
-      msg,
-      notificationFor,
-      isImportant,
-      related,
-      targetId,
-    });
+  //   await this._notificationsService.createNotification({
+  //     recepient_id: recepient.id,
+  //     actor_id: actor.id,
+  //     action,
+  //     msg,
+  //     notificationFor,
+  //     isImportant,
+  //     related,
+  //     targetId,
+  //   });
 
-    if (job?.data?.title && job?.data?.body && user?.fcm) {
-      console.log("Push Notification", user.fcm);
-      await this._firebaseService.sendPushNotification(user.fcm, job.data.title, job.data.body);
-    }
-  }
+  //   if (job?.data?.title && job?.data?.body && recepient?.fcm) {
+  //     console.log("Push Notification", recepient.fcm);
+  //     await this._firebaseService.sendPushNotification(recepient.fcm, job.data.title, job.data.body);
+  //   }
+  // }
 
-  @Process("multiple_notification_saver")
-  async multipleNotificationSaver(job: Job<MultipleNotificationPayload[]>) {
-    this._logger.log("Notification Saver Job started", job.data);
-    const data = job.data;
+  // @Process("multiple_notification_saver")
+  // async multipleNotificationSaver(job: Job<MultipleNotificationPayload[]>) {
+  //   this._logger.log("Notification Saver Job started", job.data);
+  //   const data = job.data;
 
-    data.forEach(async (notification) => {
-      this._logger.log("Preparing to send notification", notification);
-      console.log("notification runner", notification);
-      if (notification?.title && notification?.body && notification?.user?.fcm) {
-        this._logger.log(
-          `${notification.body} to send notification to ${notification.user.firstName} ${notification.user.lastName}`,
-          notification
-        );
-        this._firebaseService.sendPushNotification(
-          notification.user.fcm,
-          notification.title,
-          notification.body
-        );
-      }
-    });
-    await this._notificationsService.bulkInsertNotifications(data);
-  }
+  //   data.forEach(async (notification) => {
+  //     this._logger.log("Preparing to send notification", notification);
+  //     console.log("notification runner", notification);
+  //     if (notification?.title && notification?.body && notification?.re?.fcm) {
+  //       this._logger.log(
+  //         `${notification.body} to send notification to ${notification.user.firstName} ${notification.user.lastName}`,
+  //         notification
+  //       );
+  //       this._firebaseService.sendPushNotification(
+  //         notification.user.fcm,
+  //         notification.title,
+  //         notification.body
+  //       );
+  //     }
+  //   });
+  //   await this._notificationsService.bulkInsertNotifications(data);
+  // }
 
   @Process("mail_notification")
   async m(job: Job) {

@@ -1,17 +1,16 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Transform } from "class-transformer";
 import {
-  IsAlpha,
   IsEmail,
   IsNotEmpty,
   IsNumberString,
   IsString,
   Matches,
   MaxLength,
-  MinLength,
+  MinLength
 } from "class-validator";
-import { IsNotAdmin } from "../../shared/decorators/not-admin.decorator";
 import { UserRoles } from "src/user/enums/role.enum";
+import { IsNotAdmin } from "../../shared/decorators/not-admin.decorator";
 
 export class CreateUserDto {
   /**
@@ -47,19 +46,6 @@ export class CreateUserDto {
   @IsNotEmpty({ message: "email can not be empty" })
   @Transform(({ value }) => value.trim().toLowerCase())
   email: string;
-
-  @ApiProperty({ required: true, description: "Address of user" })
-  @IsString({ message: "Address can not be only numbers" })
-  @IsNotEmpty({ message: "Address can not be empty" })
-  @Transform(({ value }) => value.trim().toLowerCase())
-  address: string;
-  @ApiProperty({ required: true, description: "currency of user" })
-  @ApiProperty({ required: true, description: "Currency code of user (e.g. usd, eur, bdt)" })
-  @IsString({ message: "currency must be a string" })
-  @IsNotEmpty({ message: "currency can not be empty" })
-  @Matches(/^[a-zA-Z]{3}$/, { message: "currency must be a 3-letter code like USD or EUR" })
-  @Transform(({ value }) => value.trim().toLowerCase())
-  currency: string;
 
   @ApiProperty({ required: true, description: "Phone of user" })
   @IsNumberString()

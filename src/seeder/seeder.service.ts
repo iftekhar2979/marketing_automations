@@ -21,9 +21,7 @@ export class SeederService {
       const adminDto: CreateAdminDto = {
         firstName: "Mr.",
         lastName: "Admin",
-        address: "Nothing",
         phone: "+8801837352979",
-        currency: "GBM",
         email: adminEmail,
         password: adminPassword,
         roles: [UserRoles.ADMIN],

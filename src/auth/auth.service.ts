@@ -2,6 +2,7 @@ import { InjectQueue } from "@nestjs/bull";
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -17,7 +18,7 @@ import { OtpType } from "src/otp/entities/otp.entity";
 import { OtpService } from "src/otp/otp.service";
 import { AccountStatus, CreateVerificationDto } from "src/user/dto/verification-dto";
 import { Verification } from "src/user/entities/verification.entity";
-import { Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { MailService } from "../mail/mail.service";
 import { InjectLogger } from "../shared/decorators/logger.decorator";
 import { User } from "../user/entities/user.entity";
@@ -32,22 +33,6 @@ import { UpdateMyPasswordDto } from "./dto/update-password.dto";
 @Injectable()
 export class AuthService {
   private _FR_HOST: string;
-
-  /**
-   *  returns the frontend host URL.
-   */
-  public get FR_HOST(): string {
-    return this._FR_HOST;
-  }
-
-  /**
-   *  used to set the frontend host URL.
-   *  @param value the URL to the frontend host.
-   */
-  public set FR_HOST(value: string) {
-    this._FR_HOST = value;
-  }
-
   /**
    * Constructor of `AuthService` class
    * @param userRepository
@@ -63,55 +48,107 @@ export class AuthService {
     private readonly _mailService: MailService,
     private readonly _configService: ConfigService,
     @InjectLogger() private readonly _logger: Logger,
+    private readonly _dataSource: DataSource,
 
     @InjectQueue("notifications") private readonly _queue: Queue
   ) {
     this._FR_HOST = _configService.get<string>(`FR_BASE_URL`);
   }
-  async signup(createUserDto: CreateUserDto, req: Request): Promise<{ user: User; token: string }> {
-    this._logger.log(`Create and Save user with email ${createUserDto.email}`, AuthService.name);
-    let { password } = createUserDto;
-    password = await argon2hash(password);
+  async signup(createUserDto: CreateUserDto, req: Request) {
+    const queryRunner = this._dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      let user = this._userRepository.create({ ...createUserDto, password });
+      const { password, email, ...rest } = createUserDto;
 
-      user = await this._userRepository.save(user);
-      this._logger.log("User Created", AuthService.name);
+      // 1. Check if user exists before hashing (performance optimization)
+      const existingUser = await queryRunner.manager.findOne(User, { where: { email } });
+      if (existingUser) throw new ConflictException("Email already registered");
 
-      await this._verificationRepository.insert({
-        user_id: user.id,
-        is_email_verified: false,
-        is_deleted: false,
-        is_seller_verified: false,
+      // 2. Hash password with argon2
+      const hashedPassword = await argon2hash(password);
+
+      // 3. Create User Instance
+      const userInstance = queryRunner.manager.create(User, {
+        ...rest,
+        email,
+        password: hashedPassword,
+      });
+      const savedUser = await queryRunner.manager.save(userInstance);
+
+      // 4. Create Verification Record
+      await queryRunner.manager.insert("verifications", {
+        user_id: savedUser.id,
         status: AccountStatus.INACTIVE,
       });
-      const otp = await this._otpService.createOtp(user.id, OtpType.REGISTRATION);
-      try {
-        // console.log(wal)
-      } catch (err) {
-        console.log(err);
-      }
-      this._logger.log("Login the user and send the token and mail", AuthService.name);
 
-      // this._logger.log("Login the user and send the token and mail", AuthService.name);
-      const token: string = await this.signTokenSendEmailAndSMS(user, req, otp.otp);
+      // 5. Finalize Transaction
+      await queryRunner.commitTransaction();
+      // 6. Generate OTP
 
-      return { user, token };
+      const otp = await this._otpService.createOtp(savedUser.id, OtpType.REGISTRATION);
+      // 7. Post-Transaction: Communication (Email/SMS)
+      // We do this outside the transaction so if email fails, user stays created
+      const token = await this.signTokenSendEmailAndSMS(savedUser, req, otp.otp);
+
+      return {
+        status: "success",
+        data: savedUser,
+        token,
+      };
     } catch (err) {
-      this._logger.error(err.message, err.stack, AuthService.name);
-      if (err.code === "23505") throw new ConflictException("Email already exists");
-      else throw new InternalServerErrorException(err.message);
+      console.log(err);
+      await queryRunner.rollbackTransaction();
+      this.handleDatabaseError(err);
+    } finally {
+      await queryRunner.release();
     }
+  }
+  async updateRefreshToken(userId: string, refreshToken: string) {
+    const hashedRefreshToken = await argon2hash(refreshToken);
+    await this._userRepository.update(userId, {
+      current_refresh_token: hashedRefreshToken,
+    });
+  }
+  private async generateTokens(user: User) {
+    const payload = { id: user.id, email: user.email, roles: user.roles };
+
+    const [accessToken, refreshToken] = await Promise.all([
+      this._jwtService.signAsync(payload, {
+        secret: this._configService.get("JWT_ACCESS_SECRET"),
+        expiresIn: this._configService.get("AT_EXP_IN"),
+      }),
+      this._jwtService.signAsync(payload, {
+        secret: this._configService.get("JWT_REFRESH_SECRET"),
+        expiresIn: this._configService.get("RT_EXP_IN"),
+      }),
+    ]);
+
+    return { accessToken, refreshToken };
+  }
+
+  private handleDatabaseError(err: any) {
+    if (err instanceof HttpException) throw err;
+
+    // Postgres Unique Violation code
+    if (err.code === "23505") {
+      throw new ConflictException("Identity already exists");
+    }
+
+    throw new InternalServerErrorException("An unexpected error occurred during registration");
   }
 
   async verfication(verificationDto: CreateVerificationDto): Promise<Verification> {
-    const { user_id, is_email_verified, is_seller_verified, is_deleted, status } = verificationDto;
+    const { user_id, is_email_verified, is_admin_verified, is_suspended, is_deleted, status } =
+      verificationDto;
 
     this._logger.log("Creating Verification", AuthService.name);
     const verification = this._verificationRepository.create({
       user_id,
       is_email_verified,
-      is_seller_verified,
+      is_admin_verified,
+      is_suspended,
       is_deleted,
       status,
     });
@@ -289,6 +326,61 @@ export class AuthService {
     return token;
   }
 
+  async login(loginDto: LoginUserDto) {
+    const { email, password, fcm } = loginDto;
+
+    // 1. Fetch user with password and refresh token explicitly selected
+    // Since we set 'select: false' in the entity for security
+    console.log(email);
+    const user = await this._userRepository
+      .createQueryBuilder("user")
+      .addSelect("user.password")
+      .addSelect("user.current_refresh_token")
+      .where("user.email = :email", { email })
+      .getOne();
+    if (!user) {
+      // Use a generic message to prevent user enumeration attacks
+      throw new UnauthorizedException("Invalid credentials");
+    }
+
+    // 2. Verify Password
+    const isPasswordValid = await argon2verify(user.password, password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException("Invalid credentials");
+    }
+
+    // 3. Generate Token Pair
+    const { accessToken, refreshToken } = await this.generateTokens(user);
+
+    // 4. Hash and Update Refresh Token (Rotation)
+    // This ensures that even if the DB is stolen, active sessions are safe
+    const hashedRT = await argon2hash(refreshToken);
+    await this._userRepository.update(user.id, {
+      current_refresh_token: hashedRT,
+    });
+
+    if (fcm) {
+      user.fcm = fcm;
+      await this._userRepository.update(user.id, { fcm });
+    }
+    // 5. Return OpenAI Standard Response
+    return {
+      status: "success",
+      data: {
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        roles: user.roles,
+        isActive: user.isActive,
+        status: user.status,
+      },
+      tokens: {
+        access_token: accessToken,
+        refresh_token: refreshToken, // Plain text for the client to store
+      },
+    };
+  }
   async signToken(user: any): Promise<string> {
     // console.log(user)
     const payload: JwtPayload = { id: user.id };

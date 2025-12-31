@@ -3,12 +3,12 @@ import { UserRole } from "aws-sdk/clients/workmail";
 import { User } from "src/user/entities/user.entity";
 // import { User } from 'src/user/entities/user.entity';
 import {
-  Entity,
-  PrimaryGeneratedColumn,
-  ManyToOne,
-  JoinColumn,
   Column,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
 
@@ -37,9 +37,11 @@ export class Notifications {
   id: number;
 
   @ManyToOne(() => User, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "user_id" })
-  user: User;
-
+  @JoinColumn({ name: "recepient_id" })
+  recepient: User;
+  @ManyToOne(() => User, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "actor_id" })
+  actor: User;
   @ApiProperty({ example: "Product Created", description: "Notification title or brief message" })
   @Column({ type: "text", nullable: true })
   msg: string;

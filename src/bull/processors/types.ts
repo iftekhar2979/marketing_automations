@@ -32,8 +32,9 @@ export interface SinglePushNotificationPayload {
 }
 
 export interface MultipleNotificationPayload {
-  user: User;
-  userId: string;
+  recepient_id: string;
+  recepient?: User;
+  actor_id: string;
   related: NotificationRelated;
   action: NotificationAction;
   type?: NotificationType;

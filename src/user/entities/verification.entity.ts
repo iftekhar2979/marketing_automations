@@ -1,6 +1,6 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from "typeorm";
 import { ApiProperty } from "@nestjs/swagger"; // For Swagger API documentation
 import { IsBoolean, IsString } from "class-validator"; // For validation
+import { Column, Entity, JoinColumn, OneToOne, PrimaryGeneratedColumn } from "typeorm";
 import { User } from "./user.entity";
 
 @Entity("verifications")
@@ -24,10 +24,13 @@ export class Verification {
   @ApiProperty({ type: () => User })
   user: User;
   @Column({ default: false })
-  @ApiProperty({ description: "Indicates if the seller is verified", default: false })
+  @ApiProperty({ description: "Indicates if the admin is verified", default: false })
   @IsBoolean()
-  is_seller_verified: boolean;
-
+  is_admin_verified: boolean;
+  @Column({ default: false })
+  @ApiProperty({ description: "Indicates if the users is suspended", default: false })
+  @IsBoolean()
+  is_suspended: boolean;
   @Column({ default: false })
   @ApiProperty({ description: "Indicates if the record is deleted", default: false })
   @IsBoolean()

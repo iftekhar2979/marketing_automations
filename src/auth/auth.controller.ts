@@ -5,12 +5,11 @@ import {
   Delete,
   Get,
   HttpCode,
-  HttpException,
-  HttpStatus,
   NotFoundException,
   Patch,
   Post,
   Req,
+  Res,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
@@ -30,6 +29,7 @@ import {
 } from "@nestjs/swagger";
 import { Queue } from "bull";
 import { Request } from "express";
+import { FastifyReply } from "fastify";
 import { MailService } from "src/mail/mail.service";
 import { OtpService } from "src/otp/otp.service";
 import { UserService } from "src/user/user.service";
@@ -49,13 +49,8 @@ import { UpdateMyPasswordDto } from "./dto/update-password.dto";
 import { ForgetPasswordGuard } from "./guards/forget-password.guard";
 import { GoogleAuthGuard } from "./guards/google-auth.guard";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
-import { LocalAuthGuard } from "./guards/local-auth.guard";
 import { JwtAuthenticationGuard } from "./guards/session-auth.guard";
 
-/**
- * AuthController is responsible for handling incoming requests specific to Authentication related APIs and returning responses to the client.
- * it creates a route - "/auth"
- */
 @Controller("auth")
 @ApiTags("Auth")
 export class AuthController {
@@ -79,11 +74,11 @@ export class AuthController {
   })
   @ApiConflictResponse({ description: "In case of email already exists in the database" })
   async signup(@Body() createUserDto: CreateUserDto, @Req() req: Request) {
-    const { user, token } = await this._authService.signup(createUserDto, req);
+    const { data, token } = await this._authService.signup(createUserDto, req);
 
     return {
       status: "success",
-      user,
+      data,
       token,
     };
   }
@@ -121,7 +116,7 @@ export class AuthController {
    */
   @Post("login")
   @HttpCode(200)
-  @UseGuards(LocalAuthGuard)
+  // @UseGuards(LocalAuthGuard)
   @UseInterceptors(TransformInterceptor)
   @ApiOperation({
     description: "Api to login already registered user.",
@@ -130,56 +125,12 @@ export class AuthController {
   @ApiCreatedResponse({ description: "Login successful", type: UserResponseDto })
   @ApiUnauthorizedResponse({ description: "Invalid credentials" })
   @ApiBody({ required: true, type: LoginUserDto })
-  async loginPassportLocal(@Req() req: Request) {
-    const user = req.user as any;
-    if (req.body.fcm) {
-      await this._userService.updateUserData({ fcm: req.body.fcm }, user);
-      user.fcm = req.body.fcm;
-    }
-    const userInfo = await this._authService.userInfo(user);
-    const token = await this._authService.signToken(user);
-    // if (!userInfo.addressDetails) {
-    //   throw new HttpException(
-    //     {
-    //       status: "error",
-    //       message: "Address Information required",
-    //       token,
-    //     },
-    //     HttpStatus.FORBIDDEN // This sets the 406 HTTP status code
-    //   );
-    // }
-    if (!user.email) {
-      // console.log(payload)
-      const token = await this._authService.userNotAccepted({ existingToken: user });
-
-      throw new HttpException(
-        {
-          status: "error",
-          message: "Email verification required",
-          token,
-        },
-        HttpStatus.NOT_ACCEPTABLE // This sets the 406 HTTP status code
-      );
-    }
-    delete user.password;
-
-    console.log("Login", user);
-    if (user.fcm) {
-      await this._queue.add("push_notifications", {
-        token: user.fcm,
-        title: `Welcome back ${user.firstName} ${user.lastName}`,
-        body: `Thank you for logging in again to Pet Attix`,
-      });
-    }
-    return {
-      status: "success",
-      data: {
-        ...user,
-        phone: userInfo.phone,
-      },
-      token,
-      statusCode: 200,
-    };
+  async loginPassportLocal(
+    @Body() loginDto: LoginUserDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: FastifyReply
+  ) {
+    return await this._authService.login(loginDto);
   }
 
   @Post("resend-otp")

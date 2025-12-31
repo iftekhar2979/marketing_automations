@@ -1,5 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { pagination } from "src/shared/utils/pagination";
+import { User } from "src/user/entities/user.entity";
+import { UserRoles } from "src/user/enums/role.enum";
+import { Repository } from "typeorm";
 import {
   NotificationAction,
   NotificationRelated,
@@ -7,10 +11,6 @@ import {
   NotificationType,
 } from "./entities/notifications.entity";
 import { GetNotificationsResponse } from "./types/notification.response";
-import { pagination } from "src/shared/utils/pagination";
-import { Repository } from "typeorm";
-import { User } from "src/user/entities/user.entity";
-import { UserRoles } from "src/user/enums/role.enum";
 
 @Injectable()
 export class NotificationsService {
@@ -20,7 +20,8 @@ export class NotificationsService {
   ) {}
 
   async createNotification({
-    userId,
+    recepient_id,
+    actor_id,
     related,
     action,
     type = NotificationType.INFO,
@@ -29,7 +30,8 @@ export class NotificationsService {
     notificationFor,
     isImportant = false,
   }: {
-    userId: string;
+    recepient_id: string;
+    actor_id: string;
     related: NotificationRelated;
     action: NotificationAction;
     type?: NotificationType;
@@ -39,7 +41,8 @@ export class NotificationsService {
     isImportant?: boolean;
   }): Promise<Notifications> {
     const notification = this._notificationsRepository.create({
-      user: { id: userId } as User, // Ensure correct user object is passed
+      recepient: { id: recepient_id } as User, // Ensure correct user object is passed
+      actor: { id: actor_id } as User,
       related,
       action,
       type,
@@ -53,7 +56,8 @@ export class NotificationsService {
   }
   async bulkInsertNotifications(
     notificationsData: {
-      userId: string;
+      recepient_id: string;
+      actor_id: string;
       related: NotificationRelated;
       action: NotificationAction;
       type?: NotificationType;
@@ -66,7 +70,8 @@ export class NotificationsService {
     // Create an array of notifications to insert
     const notifications = notificationsData.map((data) => {
       return this._notificationsRepository.create({
-        user: { id: data.userId } as any,
+        recepient: { id: data.recepient_id } as User, // Ensure correct user object is passed
+        actor: { id: data.actor_id } as User,
         related: data.related,
         action: data.action,
         type: data.type || NotificationType.INFO,
@@ -81,12 +86,12 @@ export class NotificationsService {
     return await this._notificationsRepository.save(notifications);
   }
   async getNotifications({
-    userId,
+    recepient_id,
     page,
     limit,
     notificationFor,
   }: {
-    userId: string | null;
+    recepient_id: string;
     page: number;
     limit: number;
     isRead: boolean;
@@ -96,12 +101,11 @@ export class NotificationsService {
   }): Promise<GetNotificationsResponse> {
     const skip = (page - 1) * limit;
     const take = limit;
-    console.log(userId, notificationFor);
     // Start building the query
     const query = this._notificationsRepository.createQueryBuilder("notification");
 
-    if (userId) {
-      query.where("notification.user_id = :userId", { userId });
+    if (recepient_id) {
+      query.where("notification.recepient_id = :recepient_id", { recepient_id });
     }
 
     if (notificationFor) {
@@ -117,7 +121,7 @@ export class NotificationsService {
       id: notification.id,
       msg: notification.msg,
       related: notification.related,
-      user: notification.user,
+      recepient_id: notification.recepient,
       action: notification.action,
       type: notification.type,
       target_id: notification.target_id,

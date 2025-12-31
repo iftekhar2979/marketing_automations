@@ -1,5 +1,5 @@
-import { IsBoolean, IsEnum, IsInt, IsString } from "class-validator";
 import { ApiProperty } from "@nestjs/swagger";
+import { IsBoolean, IsEnum, IsInt, IsString } from "class-validator";
 
 export enum AccountStatus {
   INACTIVE = "inactive",
@@ -19,8 +19,10 @@ export class CreateVerificationDto {
 
   @ApiProperty({ description: "Indicates if the seller is verified", default: false })
   @IsBoolean()
-  is_seller_verified: boolean;
-
+  is_admin_verified: boolean;
+  @ApiProperty({ description: "Indicates if the seller is verified", default: false })
+  @IsBoolean()
+  is_suspended: boolean;
   @ApiProperty({ description: "Indicates if the record is deleted", default: false })
   @IsBoolean()
   is_deleted: boolean;
