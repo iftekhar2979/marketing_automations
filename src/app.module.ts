@@ -68,6 +68,11 @@ import { SettingsModule } from "./settings/settings.module";
       // envFilePath: [`.env.stage.dev`],
       isGlobal: true,
       validationSchema: envSchema,
+
+      validationOptions: {
+        allowUnknown: true,
+        abortEarly: true,
+      },
       // validationOptions: { allowUnknown: false, abortEarly: true },
     }),
 

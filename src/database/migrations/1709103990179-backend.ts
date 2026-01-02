@@ -11,8 +11,8 @@ export class Backend1709103990179 implements MigrationInterface {
             CREATE TABLE "users" (
                 "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "googleID" character varying,
-                "firstName" character varying(50) NOT NULL,
-                "lastName" character varying(50) NOT NULL,
+                "first_name" character varying(50) NOT NULL,
+                "last_name" character varying(50) NOT NULL,
                 "email" character varying(100) NOT NULL,
                 "password" character varying,
                 "passwordResetToken" character varying,

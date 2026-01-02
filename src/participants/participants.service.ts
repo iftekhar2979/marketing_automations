@@ -47,8 +47,8 @@ export class ParticipantsService {
   //     relations: ["user", "conversation", "product"], // We are joining the user relation
   //     select: {
   //       user: {
-  //         firstName: true,
-  //         lastName: true,
+  //         first_name: true,
+  //         last_name: true,
   //         email: true,
   //         image: true,
   //         id: true,
@@ -104,7 +104,7 @@ export class ParticipantsService {
   //   const participantsInSameConversations = await this.participantRepo
   //     .createQueryBuilder("participant")
   //     .leftJoinAndSelect("participant.user", "user")
-  //     .addSelect(["user.email", "user.firstName", "user.lastName", "user.id"])
+  //     .addSelect(["user.email", "user.first_name", "user.last_name", "user.id"])
   //     .where("participant.conversation_id IN (:...conversationIds)", {
   //       conversationIds: userIdsInSameConversations,
   //     })

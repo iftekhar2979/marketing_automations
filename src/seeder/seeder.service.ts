@@ -19,8 +19,8 @@ export class SeederService {
 
     if (!existingAdmin) {
       const adminDto: CreateAdminDto = {
-        firstName: "Mr.",
-        lastName: "Admin",
+        first_name: "Mr.",
+        last_name: "Admin",
         phone: "+8801837352979",
         email: adminEmail,
         password: adminPassword,

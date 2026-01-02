@@ -43,7 +43,7 @@ export class StripeService {
           user_id: user.id,
           amount: amount,
           email: user.email,
-          name: user.firstName,
+          name: user.first_name,
         },
         mode: "payment",
         customer_email: user.email,

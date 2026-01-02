@@ -11,20 +11,20 @@ export class CreateUserGoogleDto {
   id: number;
 
   /**
-   * Firstname of user
+   * first_name of user
    */
-  @ApiPropertyOptional({ description: "Firstname of user" })
+  @ApiPropertyOptional({ description: "first_name of user" })
   @IsString()
   @IsOptional()
-  firstName?: string;
+  first_name?: string;
 
   /**
-   * Lastname of user
+   * last_name of user
    */
-  @ApiProperty({ required: true, description: "Lastname of user" })
+  @ApiProperty({ required: true, description: "last_name of user" })
   @IsString()
   @IsNotEmpty()
-  lastName: string;
+  last_name: string;
 
   /**
    * Email of user

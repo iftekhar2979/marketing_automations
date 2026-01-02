@@ -56,7 +56,7 @@ export class MailService {
   }
 
   async sendUserConfirmationMail(user: User, url: string) {
-    const subject = `Welcome to Your Pet Attix! Hi ${user.firstName}, Here's Your Account Activation Code`;
+    const subject = `Welcome to Your Pet Attix! Hi ${user.first_name}, Here's Your Account Activation Code`;
     // await this._mailService.sendMail({
     this._mailService.sendMail({
       // from: { name: this._name, address: this._from },
@@ -66,8 +66,8 @@ export class MailService {
       context: {
         subject: "",
         header: "",
-        firstName: user.firstName,
-        lastName: user.lastName,
+        first_name: user.first_name,
+        last_name: user.last_name,
         url,
       },
     });
@@ -89,7 +89,7 @@ export class MailService {
       context: {
         subject: "",
         header: "",
-        firstName: user.firstName,
+        first_name: user.first_name,
         url,
       },
     });
@@ -109,7 +109,7 @@ export class MailService {
       context: {
         subject: "",
         header: "",
-        firstName: user.firstName,
+        first_name: user.first_name,
         url,
       },
     });
@@ -165,7 +165,7 @@ export class MailService {
       context: {
         subject: "",
         header: "",
-        firstName: user.firstName,
+        first_name: user.first_name,
       },
     });
   }
@@ -183,7 +183,7 @@ export class MailService {
       context: {
         subject: "",
         header: "",
-        firstName: user.firstName,
+        first_name: user.first_name,
       },
     });
   }
@@ -201,7 +201,7 @@ export class MailService {
       context: {
         subject: "",
         header: "",
-        firstName: user.firstName,
+        first_name: user.first_name,
       },
     });
   }
@@ -214,10 +214,10 @@ export class MailService {
   //     context: {
   //       subject,
   //       header: "You received a new offer!",
-  //       buyerFirstName: buyer.firstName,
-  //       buyerLastName: buyer.lastName,
-  //       sellerFirstName: seller.firstName,
-  //       sellerLastName: seller.lastName,
+  //       buyerfirst_name: buyer.first_name,
+  //       buyerlast_name: buyer.last_name,
+  //       sellerfirst_name: seller.first_name,
+  //       sellerlast_name: seller.last_name,
   //       productName: product.product_name,
   //       sellingPrice: product.selling_price, // added this
   //       offerPrice: offer.price,
@@ -233,10 +233,10 @@ export class MailService {
   //     context: {
   //       subject,
   //       header: "",
-  //       buyerFirstName: buyer.firstName,
-  //       buyerLastName: buyer.lastName,
-  //       sellerFirstName: seller.firstName,
-  //       sellerLastName: seller.lastName,
+  //       buyerfirst_name: buyer.first_name,
+  //       buyerlast_name: buyer.last_name,
+  //       sellerfirst_name: seller.first_name,
+  //       sellerlast_name: seller.last_name,
   //       productName: product.product_name,
   //       sellingPrice: product.selling_price, // added this
   //       offerPrice: offer.price,
@@ -252,10 +252,10 @@ export class MailService {
   //     context: {
   //       subject,
   //       header: "",
-  //       buyerFirstName: buyer.firstName,
-  //       buyerLastName: buyer.lastName,
-  //       sellerFirstName: seller.firstName,
-  //       sellerLastName: seller.lastName,
+  //       buyerfirst_name: buyer.first_name,
+  //       buyerlast_name: buyer.last_name,
+  //       sellerfirst_name: seller.first_name,
+  //       sellerlast_name: seller.last_name,
   //       productName: product.product_name,
   //       sellingPrice: product.selling_price,
   //       offerPrice: offer.price,

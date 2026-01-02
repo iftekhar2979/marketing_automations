@@ -24,7 +24,7 @@ export class ConversationsService {
   // async createConversation({ product, users }: { product: Product; users: User[] }) {
   //   console.log(product);
   //   const conversation = this.conversationRepo.create({
-  //     name: `${product.product_name} (${users.map((u) => u.firstName).join(" - ")})`,
+  //     name: `${product.product_name} (${users.map((u) => u.first_name).join(" - ")})`,
   //     image: `${product.images[0].image}`,
   //     product,
   //   });
@@ -188,7 +188,7 @@ export class ConversationsService {
   //       // Create conversation using transactional entity manager
   //       const savedConversation = await manager.save(Conversations, {
   //         product,
-  //         name: `${product.product_name} (${users.map((u) => u.firstName).join(" - ")})`,
+  //         name: `${product.product_name} (${users.map((u) => u.first_name).join(" - ")})`,
   //         image: product.images[0]?.image || null,
   //         lastmsg: null,
   //       });
@@ -242,8 +242,8 @@ export class ConversationsService {
   //       .leftJoinAndSelect("conversation.lastmsg", "lastmsg") // Join with last message
   //       .addSelect([
   //         "user.id",
-  //         "user.firstName",
-  //         "user.lastName",
+  //         "user.first_name",
+  //         "user.last_name",
   //         "user.image",
   //         "user.email",
   //         "user.isActive",
@@ -253,8 +253,8 @@ export class ConversationsService {
   //       .andWhere(
   //         new Brackets((qb) => {
   //           qb.where("conversation.name ILIKE :term", { term: `%${term}%` })
-  //             .orWhere("user.firstName ILIKE :term", { term: `%${term}%` })
-  //             .orWhere("user.lastName ILIKE :term", { term: `%${term}%` });
+  //             .orWhere("user.first_name ILIKE :term", { term: `%${term}%` })
+  //             .orWhere("user.last_name ILIKE :term", { term: `%${term}%` });
   //         })
   //       )
   //       .skip(skip) // Apply pagination
@@ -346,7 +346,7 @@ export class ConversationsService {
 
   //     // 4. Create Conversation
   //     const conversation = queryRunner.manager.create(Conversations, {
-  //       name: `${product.product_name} (${users[0].firstName} - ${users[1].firstName})`,
+  //       name: `${product.product_name} (${users[0].first_name} - ${users[1].first_name})`,
   //       image: null,
   //       product,
   //     });

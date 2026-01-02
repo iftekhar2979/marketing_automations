@@ -54,11 +54,11 @@ export class SocketService {
       //   const payload = this.jwtService.verify(jwt);
       const payload = await this.userService.getUserById(this.jwtService.verify(jwt).id);
       console.warn("Payload", payload);
-      if (!payload.firstName) {
+      if (!payload.first_name) {
         throw new UnauthorizedException("You are not authorized to access this resource!");
       }
       this.connectedUsers.set(payload.id, {
-        name: payload.firstName,
+        name: payload.first_name,
         socketID: clientId,
       });
 
@@ -103,7 +103,7 @@ export class SocketService {
       socket.on("disconnect", async () => {
         // await this.userService.updateUserUpdatedTimeAndOfflineStatus({ user_id: payload.id });
         // socket.broadcast.emit(`active-users`, {
-        //   message: `${payload.firstName} is offline .`,
+        //   message: `${payload.first_name} is offline .`,
         //   isActive: false,
         //   id: payload.id,
         // });
@@ -142,7 +142,7 @@ export class SocketService {
   //   friendsInfo.forEach((friend: User) => {
   //     if (this.connectedUsers.get(friend.id)) {
   //       socket.emit("active-users", {
-  //         message: `${friend.firstName} is online now.`,
+  //         message: `${friend.first_name} is online now.`,
   //         isActive: true,
   //         id: friend.id,
   //       });
@@ -178,7 +178,7 @@ export class SocketService {
     const receiverSocket = this.getSocketByUserId(receiverId);
     const senderSocket = this.getSocketByUserId(senderId);
     console.log(message.sender);
-    const senderName = `${message?.sender?.firstName} ${message?.sender?.lastName}`;
+    const senderName = `${message?.sender?.first_name} ${message?.sender?.last_name}`;
     delete message.conversation;
     delete message.sender;
     if (receiverSocket) {

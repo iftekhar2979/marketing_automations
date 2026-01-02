@@ -61,7 +61,7 @@ export class PushNotificationProccessor {
   //     console.log("notification runner", notification);
   //     if (notification?.title && notification?.body && notification?.re?.fcm) {
   //       this._logger.log(
-  //         `${notification.body} to send notification to ${notification.user.firstName} ${notification.user.lastName}`,
+  //         `${notification.body} to send notification to ${notification.user.first_name} ${notification.user.last_name}`,
   //         notification
   //       );
   //       this._firebaseService.sendPushNotification(

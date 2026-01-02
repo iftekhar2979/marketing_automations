@@ -28,10 +28,10 @@ export class User {
 
   @Column({ length: 50 })
   @ApiProperty()
-  firstName: string;
+  first_name: string;
   @Column({ length: 50 })
   @ApiProperty()
-  lastName: string;
+  last_name: string;
   @Column({ unique: true, length: 100 })
   @ApiProperty()
   email: string;
@@ -41,7 +41,6 @@ export class User {
   @Column({ type: "varchar", nullable: true, default: "not_verified" })
   @ApiProperty()
   status: USERSTATUS.NOT_VERIFIED;
-  @Column({ nullable: true })
   @Column({ nullable: true, select: false }) // Critical: Never select by default
   @Exclude()
   password: string;
@@ -53,10 +52,10 @@ export class User {
   @Column({ nullable: true, type: "varchar" })
   current_refresh_token: string;
 
-  @Column("enum", { array: true, enum: UserRoles, default: `{${UserRoles.USER}}` })
+  @Column("enum", { array: true, enum: UserRoles, default: `{${UserRoles.AGENCY_OWNER}}` })
   @ApiProperty({
     enum: UserRoles,
-    default: [UserRoles.USER],
+    default: [UserRoles.AGENCY_OWNER],
     description: `String array, containing enum values, either ${UserRoles.USER} or ${UserRoles.ADMIN}`,
   })
   roles: UserRoles[];

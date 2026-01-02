@@ -117,11 +117,11 @@ export class AuthService {
     const [accessToken, refreshToken] = await Promise.all([
       this._jwtService.signAsync(payload, {
         secret: this._configService.get("JWT_ACCESS_SECRET"),
-        expiresIn: this._configService.get("AT_EXP_IN"),
+        expiresIn: this._configService.get("AUTH_JWT_ACCESS_TOKEN_EXPIRED"),
       }),
       this._jwtService.signAsync(payload, {
         secret: this._configService.get("JWT_REFRESH_SECRET"),
-        expiresIn: this._configService.get("RT_EXP_IN"),
+        expiresIn: this._configService.get("AUTH_JWT_REFRESH_TOKEN_EXPIRED"),
       }),
     ]);
 
@@ -155,47 +155,73 @@ export class AuthService {
 
     return await this._verificationRepository.save(verification);
   }
-  async OtpVerify(otpDto: OtpVerificationDto, userInfo: User) {
+  async verifyOtp(otpDto: OtpVerificationDto, userInfo: User) {
     const { otp, verification_type } = otpDto;
-    this._logger.log("Creating Verification", AuthService.name);
+
+    // 1. Fetch OTP Record
     const verification = await this._otpService.findOtpByUserId(userInfo.id);
+
+    // Security: Generic error for non-existent OTP to prevent enumeration
     if (!verification) {
-      throw new NotFoundException("OTP not found or expired");
+      throw new NotFoundException("OTP record not found or already used");
     }
+
+    // 2. Expiration Check (Do this BEFORE attempt check)
+    if (new Date() > verification.expiresAt) {
+      await this._otpService.removeOtpByUserId(userInfo.id);
+      throw new BadRequestException("OTP has expired");
+    }
+
+    // 3. Brute-Force Protection
     if (verification.attempts >= 3) {
       await this._otpService.removeOtpByUserId(userInfo.id);
-      throw new BadRequestException("Too many attempts, please request a new OTP");
+      throw new BadRequestException("Too many failed attempts. Please request a new code.");
     }
+
+    // 4. Value Validation
     if (verification.otp !== otp) {
       await this._otpService.updateOtpAttempts(userInfo.id, verification.attempts + 1);
-      throw new BadRequestException("Invalid OTP");
+      throw new BadRequestException("Invalid verification code");
     }
-    // if (verification.type !== verification_type) {
-    //   throw new BadRequestException("Wrong Verification Request");
-    // }
-    if (!verification || (await verification).expiresAt < new Date()) {
-      throw new NotFoundException("OTP expired");
-    }
-    const verifications = await this._verificationRepository.findOne({ where: { user_id: userInfo.id } });
-    if (verification.type === OtpType.FORGOT_PASSWORD) {
-      const user = (await this._userRepository.findOne({ where: { id: userInfo.id } })) as any;
-      if (!user) {
-        throw new NotFoundException("User not found");
+
+    // 5. Atomic Update & Cleanup
+    // Use a transaction to ensure user is verified AND OTP is removed
+    return await this._dataSource.transaction(async (manager) => {
+      // Update User/Verification Account Status
+      const userVerification = await manager.findOne(Verification, {
+        where: { user_id: userInfo.id },
+      });
+
+      if (!userVerification) throw new NotFoundException("User verification record missing");
+
+      userVerification.is_email_verified = true;
+      userVerification.status = AccountStatus.ACTIVE;
+      await manager.save(userVerification);
+
+      // Consume the OTP (Delete it so it can't be used again)
+      await this._otpService.removeOtpByUserId(userInfo.id);
+
+      // 6. Handle Specific Flows
+      if (verification_type === OtpType.FORGOT_PASSWORD) {
+        // Return a short-lived "Reset Token"
+        // This token should only be valid for the /reset-password endpoint
+        const resetToken = this._jwtService.sign(
+          { id: userInfo.id, purpose: "password_reset" },
+          { expiresIn: "15m" }
+        );
+
+        return {
+          status: "success",
+          message: "OTP verified. You may now reset your password.",
+          reset_token: resetToken,
+        };
       }
-      user.verification_type = OtpType.FORGOT_PASSWORD;
-      const token = this._jwtService.sign({ id: user.id, verification_type: OtpType.FORGOT_PASSWORD });
-      verifications.is_email_verified = true;
-      verifications.status = AccountStatus.ACTIVE;
-      await this._verificationRepository.save(verifications);
-      return { message: "OTP verified successfully", data: {}, token };
-    }
-    if (!verifications) {
-      throw new NotFoundException("Verification not found");
-    }
-    verifications.is_email_verified = true;
-    verifications.status = AccountStatus.ACTIVE;
-    await this._verificationRepository.save(verifications);
-    return { message: "OTP verified successfully", data: {}, status: "success" };
+
+      return {
+        status: "success",
+        message: "Account verified successfully",
+      };
+    });
   }
   async resetPassword(resetPasswordDto: ResetPasswordDto, user) {
     const { password, passwordConfirm } = resetPasswordDto;
@@ -368,8 +394,8 @@ export class AuthService {
       status: "success",
       data: {
         id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        first_name: user.first_name,
+        last_name: user.last_name,
         email: user.email,
         roles: user.roles,
         isActive: user.isActive,
@@ -389,7 +415,7 @@ export class AuthService {
     // console.log(userInfo)
 
     this._logger.log("Signing token", AuthService.name);
-    if (!user.firstName) {
+    if (!user.first_name) {
       // console.log(payload)
       const payload = { id: user.id, verification_type: "registration" };
 

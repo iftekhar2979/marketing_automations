@@ -23,7 +23,7 @@ export class CreateUserDto {
   // @IsAlpha()
   @IsString({ message: "First name must be a string" })
   @IsNotEmpty({ message: "First name can not be empty" })
-  firstName: string;
+  first_name: string;
 
   /**
    * Last Name of user
@@ -35,7 +35,7 @@ export class CreateUserDto {
   // @IsAlpha()
   @IsString({ message: "Last name must be a string" })
   @IsNotEmpty({ message: "Last name can not be empty" })
-  lastName: string;
+  last_name: string;
 
   /**
    * Email of user

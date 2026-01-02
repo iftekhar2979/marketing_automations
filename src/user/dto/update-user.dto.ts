@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { IsAlpha, IsNotEmpty, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { IsAlpha, IsOptional, IsString, MaxLength, MinLength } from "class-validator";
 import { IsNotAdmin } from "../../shared/decorators/not-admin.decorator";
 
 /**
@@ -16,7 +16,7 @@ export class UpdateUserDto {
   @IsAlpha()
   @IsString({ message: "First name must be a string" })
   @IsOptional()
-  firstName?: string;
+  first_name?: string;
 
   /**
    * Last Name of user
@@ -28,7 +28,7 @@ export class UpdateUserDto {
   @IsAlpha()
   @IsString({ message: "Last name must be a string" })
   @IsOptional()
-  lastName?: string;
+  last_name?: string;
 
   @IsOptional()
   fcm?: string;

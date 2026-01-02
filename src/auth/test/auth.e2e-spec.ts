@@ -4,20 +4,20 @@ import { CreateUserDto } from "../dto/create-user.dto";
 describe("AuthController (e2e)", () => {
   describe("POST /auth/signup", () => {
     const badInput: Partial<CreateUserDto>[] = [
-      { lastName: "last name", email: "test@mail.com", password: "Password@123" }, // no firstName
-      { firstName: "firstname", email: "test@mail.com", password: "Password@123" }, // no lastName
-      { firstName: "firstname", lastName: "last name", password: "Password@123" }, // no email
-      { firstName: "firstname", lastName: "last name", email: "test@mail.com" }, // no password
-      { firstName: "firstname", lastName: "last name", email: "test@mail", password: "Password@123" }, // bad email
-      { firstName: "firstname", lastName: "last name", email: "test@mail.com", password: "1243" }, // bad password
-      { firstName: "firstname", lastName: "last name", email: "test@mail.com", password: "password" }, // bad password
-      { firstName: "first-name", lastName: "last name", email: "test@mail.com", password: "Password@123" }, // first name is not a-zA-Z
-      { firstName: "admin", lastName: "last name", email: "test@mail.com", password: "Password@123" }, // first name is admin
+      { last_name: "last name", email: "test@mail.com", password: "Password@123" }, // no first_name
+      { first_name: "first_name", email: "test@mail.com", password: "Password@123" }, // no last_name
+      { first_name: "first_name", last_name: "last name", password: "Password@123" }, // no email
+      { first_name: "first_name", last_name: "last name", email: "test@mail.com" }, // no password
+      { first_name: "first_name", last_name: "last name", email: "test@mail", password: "Password@123" }, // bad email
+      { first_name: "first_name", last_name: "last name", email: "test@mail.com", password: "1243" }, // bad password
+      { first_name: "first_name", last_name: "last name", email: "test@mail.com", password: "password" }, // bad password
+      { first_name: "first-name", last_name: "last name", email: "test@mail.com", password: "Password@123" }, // first name is not a-zA-Z
+      { first_name: "admin", last_name: "last name", email: "test@mail.com", password: "Password@123" }, // first name is admin
     ];
 
     const successInput: CreateUserDto = {
-      firstName: "firstname",
-      lastName: "last name",
+      first_name: "first_name",
+      last_name: "last name",
       email: "test@mail.com",
       password: "Password@123",
     };

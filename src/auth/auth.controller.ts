@@ -66,7 +66,7 @@ export class AuthController {
   @Post("signup")
   @ApiOperation({
     description: "Api to register new users.",
-    summary: "Api to register new users. It takes (firstName, lastName, email and password) as input",
+    summary: "Api to register new users. It takes (first_name, last_name, email and password) as input",
   })
   @ApiCreatedResponse({
     description: "The user is successfully created",
@@ -174,7 +174,7 @@ export class AuthController {
   @ApiUnauthorizedResponse({ description: "Session Expired!" })
   async VerifyOtp(@Body() otp: OtpVerificationDto, @GetUser() user: User) {
     // console.log(user)
-    const token = await this._authService.OtpVerify(otp, user);
+    const token = await this._authService.verifyOtp(otp, user);
     return token;
   }
 
