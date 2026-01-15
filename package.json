@@ -66,6 +66,7 @@
     "@nestjs/typeorm": "^11.0.0",
     "@nestjs/websockets": "^11.1.0",
     "@sendgrid/mail": "^8.1.6",
+    "@socket.io/redis-adapter": "^8.3.0",
     "argon2": "^0.40.3",
     "aws-sdk": "^2.1692.0",
     "body-parser": "^2.2.0",
@@ -90,6 +91,7 @@
     "hpp": "^0.2.3",
     "ioredis": "^5.7.0",
     "joi": "^17.13.3",
+    "k6": "^0.0.0",
     "mime-types": "^3.0.1",
     "multer": "^2.0.2",
     "multer-s3": "^3.0.1",
@@ -110,6 +112,7 @@
     "sharp": "^0.34.3",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "socket.io-redis": "^5.4.0",
     "stripe": "^18.4.0",
     "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.20",
@@ -125,6 +128,7 @@
     "@types/cron": "^2.4.0",
     "@types/express": "^4.17.21",
     "@types/jest": "^29.5.12",
+    "@types/k6": "^1.5.0",
     "@types/multer": "^2.0.0",
     "@types/node": "^22.0.0",
     "@types/passport-google-oauth20": "^2.0.16",
@@ -167,5 +171,18 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
-  }
+  },
+  "main": ".eslintrc.js",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iftekhar2979/marketing_automations.git"
+  },
+  "keywords": [],
+  "bugs": {
+    "url": "https://github.com/iftekhar2979/marketing_automations/issues"
+  },
+  "homepage": "https://github.com/iftekhar2979/marketing_automations#readme"
 }

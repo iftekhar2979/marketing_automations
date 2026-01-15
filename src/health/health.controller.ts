@@ -1,4 +1,4 @@
-import { Controller, Get, Req, Res } from "@nestjs/common";
+import { Controller, Get } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import {
@@ -7,18 +7,23 @@ import {
   MemoryHealthIndicator,
   TypeOrmHealthIndicator,
 } from "@nestjs/terminus";
+import * as client from "prom-client";
 import { MetricsService } from "./matrics.service";
-
-@Controller("health")
+@Controller("matrics")
 @ApiTags("Health Check")
 export class HealthController {
+  private readonly register: client.Registry;
   constructor(
     private health: HealthCheckService,
     private dbSQL: TypeOrmHealthIndicator,
     private memory: MemoryHealthIndicator,
     private configService: ConfigService,
     private readonly metricsService: MetricsService
-  ) {}
+  ) {
+    ((this.register = new client.Registry()),
+      this.register.setDefaultLabels({ app: "prometheus" }),
+      client.collectDefaultMetrics({ register: this.register }));
+  }
 
   @Get("database")
   @HealthCheck()
@@ -47,16 +52,7 @@ export class HealthController {
   }
 
   @Get()
-  async getMetrics(@Req() req: any, @Res() res: any) {
-    // Track HTTP requests in the custom Prometheus counter
-    res.on("finish", () => {
-      this.metricsService.incrementHttpRequests(req.method, req.originalUrl, res.statusCode.toString());
-    });
-
-    // Set the content type for Prometheus metrics
-    // res.set('Content-Type', promClient.register.contentType);
-    res.set("Content-Type", "text/plain; version=0.0.4");
-    // Return the metrics
-    return res.end(await this.metricsService.getMetrics());
+  async getMetrics() {
+    return await this.metricsService.getMetrics();
   }
 }
