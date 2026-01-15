@@ -11,13 +11,7 @@ import { Verification } from "./entities/verification.entity";
 import { UserController } from "./user.controller";
 import { UserService } from "./user.service";
 import { UserAddressService } from "./userAddress.service";
-/**
- * It is a feature module where we keep the controller, service and other code related to user entity and  we import other modules and configure modules and packages that are being used in this module.
- *
- * Here, feature modules imported are -  DatabaseModule, AuthModule, MailModule and UserModule.
- * other modules are :
- *      TypeOrmModule - it is an ORM and enables easy access to database.
- */
+
 @Module({
   imports: [
     forwardRef(() => AuthModule),
