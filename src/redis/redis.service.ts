@@ -2,6 +2,7 @@
 
 import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { Cache } from "cache-manager";
 import Redis from "ioredis";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
@@ -12,14 +13,15 @@ export class RedisService implements OnModuleInit {
   private redis: Redis;
   constructor(
     @Inject(CACHE_MANAGER) private _cacheManager: Cache, // Inject CacheManager
-    @InjectLogger() private readonly _logger: Logger
+    @InjectLogger() private readonly _logger: Logger,
+    private readonly _configService: ConfigService
   ) {}
   onModuleInit() {
-    console.log("Redis Intiazed");
-    // this.redis = new Redis({
-    //   host: "127.0.0.1",
-    //   port: 6379,
-    // });
+    this.redis = new Redis({
+      host: this._configService.get<string>("REDIS_HOST"),
+      port: this._configService.get<number>("REDIS_PORT"),
+    });
+    console.log("Redis IntiaLized");
 
     // this.redis.monitor((err, monitor) => {
     //   if (err) {
@@ -27,9 +29,9 @@ export class RedisService implements OnModuleInit {
     //     return;
     //   }
     //   console.log("Redis MONITOR mode started");
-    //   monitor.on("monitor", (time, args, source, db) => {
-    //     console.log(`[DB${db}] ${source}:`, args);
-    //   });
+    //   // monitor.on("monitor", (time, args, source, db) => {
+    //   //   console.log(`[DB${db}] ${source}:`, args);
+    //   // });
     // });
   }
 
@@ -71,5 +73,8 @@ export class RedisService implements OnModuleInit {
       await redis.del(keys);
       this._logger.debug(`Invalidated keys matching pattern: ${pattern}`);
     }
+  }
+  async getRedisClient(): Promise<Redis> {
+    return this.redis;
   }
 }

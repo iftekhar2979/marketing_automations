@@ -15,8 +15,11 @@ import { AppModule } from "./app.module";
 // import { loadSecretsFromAWS } from "./configs/app.config";
 import { CorsOptions } from "@nestjs/common/interfaces/external/cors-options.interface";
 import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify";
+import { IoAdapter } from "@nestjs/platform-socket.io";
+import { createAdapter } from "@socket.io/redis-adapter";
 import bodyParser from "body-parser";
 import { join } from "path";
+import { createClient } from "redis";
 import { createDataSource } from "./configs/ormconfig";
 import { runMigrations } from "./migration-runner";
 import { SeederService } from "./seeder/seeder.service";
@@ -24,10 +27,6 @@ import { SeederService } from "./seeder/seeder.service";
  * function for bootstraping the nest application
  */
 async function bootstrap() {
-  // Load AWS secrets before anything else
-  // FIXME: have it if you are using secret manager
-  // await loadSecretsFromAWS();
-
   // Create the data source after secrets are loaded
   const dataSource = createDataSource();
   // Run Auto Migrations
@@ -39,6 +38,21 @@ async function bootstrap() {
   });
   const configService = app.get<ConfigService>(ConfigService);
 
+  // --- Add Redis Adapter ---
+  const pubClient = createClient({ url: "redis://localhost:6379" });
+  const subClient = pubClient.duplicate();
+
+  await Promise.all([pubClient.connect(), subClient.connect()]);
+
+  app.useWebSocketAdapter(
+    new (class extends IoAdapter {
+      createIOServer(port: number, options?: any) {
+        const server = super.createIOServer(port, options);
+        server.adapter(createAdapter(pubClient, subClient));
+        return server;
+      }
+    })(app)
+  );
   const seederService = app.get(SeederService);
   await seederService.seedAdminUser();
   // await seederService.seedSettings();

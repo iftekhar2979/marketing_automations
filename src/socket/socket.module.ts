@@ -8,6 +8,7 @@ import { AuthModule } from "src/auth/auth.module";
 import { Conversations } from "src/conversations/entities/conversations.entity";
 import { Messages } from "src/messages/entities/messages.entity";
 import { ParticipantsModule } from "src/participants/participants.module";
+import { RedisModule } from "src/redis/redis.module";
 import { UserModule } from "src/user/user.module";
 import { SocketController } from "./socket.controller";
 import { SocketGateway } from "./socket.gateway";
@@ -37,6 +38,7 @@ import { SocketService } from "./socket.service";
     // ConversationsModule,
     BullModule.registerQueue({ name: "product" }, { name: "notifications" }),
     ParticipantsModule,
+    RedisModule,
   ],
   providers: [SocketGateway, SocketService],
   controllers: [SocketController],

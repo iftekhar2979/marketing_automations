@@ -33,6 +33,7 @@ import { GeminiModule } from "./gemini/gemini.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { SeederService } from "./seeder/seeder.service";
 import { SettingsModule } from "./settings/settings.module";
+import { SocketModule } from "./socket/socket.module";
 /**
  * It is the root module for the application in we import all feature modules and configure modules and packages that are common in feature modules. Here we also configure the middlewares.
  *
@@ -86,19 +87,6 @@ import { SettingsModule } from "./settings/settings.module";
         },
       ],
     }),
-    // ElasticsearchModule.register({
-    //   node: `${process.env.ELASTICSEARCH_NODE}`, // Your Elasticsearch node URL
-    // }),
-    // ElasticsearchModule.register({
-    //   node: "https://localhost:9200",
-    //   auth: {
-    //     username: "elastic",
-    //     password: "zLOt2va9_fUKmX0kN3xD",
-    //   },
-    //   tls: {
-    //     rejectUnauthorized: false, // This is for development purposes only, do not use in production
-    //   },
-    // }),
     WinstonModule.forRoot(winstonLoggerConfig),
     PostgreSQLDatabaseModule,
     AuthModule,
@@ -115,7 +103,7 @@ import { SettingsModule } from "./settings/settings.module";
     BullModule,
     GeminiModule,
     SettingsModule,
-
+    SocketModule,
     NotificationsModule,
   ],
   controllers: [AppController],
