@@ -13,7 +13,7 @@ import { SocketService } from "./socket.service";
 
 @WebSocketGateway({
   cors: {
-    origin: ["https://petattix.merinasib.shop", "http://localhost:4500"], // ⚠️ removed trailing space!
+    origin: ["https://petattix.merinasib.shop", "http://localhost:4500"],
   },
 })
 export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -33,19 +33,31 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   //   this._socketService.handleConnection(client, this.server); // pass server
   // }
   async handleConnection(socket: Socket) {
+    // console.log(socket);
     const userId = socket.handshake.query.userId as string;
     if (!userId) return socket.disconnect(true);
     // ✅ ONLY this line is needed for routing
-    socket.join(`user:3002`);
-    console.log(`✅ ${userId} joined room user:${userId}`);
+    const room = [`user:3001`, `user:3002`];
+    room?.forEach((element) => {
+      socket.join(element);
+    });
     // 🔥 Store in Redis: userId → socket.id
-    await (await this._redisService.getRedisClient()).set(`socket_user:${userId}`, socket.id);
+    await this._redisService.getClient().hSet("online_users", userId, socket.id);
     console.log(`🟢 ${userId} is online (socket: ${socket.id})`);
-
     // Optional: broadcast to others
     socket.broadcast.emit("user-online", { userId });
   }
-  handleDisconnect(client: Socket): void {
+  handleDisconnect(client: any) {
+    console.log(client.handshake.query.userId);
+    this._redisService
+      .getClient()
+      .hDel("online_users", client.handshake.query.userId)
+      .then((res) => {
+        console.log(`🔴 ${client.handshake.query.userId} went offline`, res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
     this._socketService.handleDisconnection(client);
   }
   // @SubscribeMessage("message")
@@ -56,7 +68,16 @@ export class SocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage("message")
   handleMessage(@MessageBody() data: any) {
-    this.server.to(`user:3002`).emit("message", data);
+    const room = `user:${data.to}`;
+
+    console.log(this.server);
+    this.server.to(room).emit("message", data);
+  }
+
+  @SubscribeMessage("ping")
+  handlePing(@MessageBody() data: any) {
+    console.log("🏓 Received ping");
+    return { value: "pong" }; // This sends acknowledgment back
   }
 
   // async handleMessage(client: Socket, @MessageBody() data: any) {

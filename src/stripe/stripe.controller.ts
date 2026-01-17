@@ -3,13 +3,16 @@ import { StripeService } from "./stripe.service";
 // import { ConfigService } from 'aws-sdk';
 
 import { ConfigService } from "@nestjs/config";
+import { PageSessionService } from "src/page_session/page_session.service";
+import { LeadgenWebhookPayload } from "src/page_session/types/webhook.types";
 import Stripe from "stripe";
 
 @Controller("webhook")
 export class StripeController {
   constructor(
-    private readonly stripeService: StripeService,
-    private readonly configService: ConfigService
+    private readonly _stripeService: StripeService,
+    private readonly _configService: ConfigService,
+    private readonly _pageSessionService: PageSessionService
     // private readonly walletService: WalletsService
   ) {}
 
@@ -31,7 +34,7 @@ export class StripeController {
   @Post("stripe")
   async handleStripeWebhook(@Body() rawBody: Buffer, @Headers("stripe-signature") signature: string) {
     console.log(signature);
-    const endpointSecret = this.configService.get<string>("STRIPE_WEBHOOK_SECRET");
+    const endpointSecret = this._configService.get<string>("STRIPE_WEBHOOK_SECRET");
     // console.log(endpointSecret)
     try {
       // Use stripe.webhooks.constructEvent directly to verify the event
@@ -91,16 +94,30 @@ export class StripeController {
   }
 
   @Post("facebook")
-  handleFacebookLead(@Body() body: any) {
+  async handleFacebookLead(@Body() body: LeadgenWebhookPayload) {
     console.log("Incoming webhook event:", JSON.stringify(body, null, 2));
 
     // Check if it's a lead event
     if (body.object === "page") {
       for (const entry of body.entry) {
         for (const change of entry.changes) {
-          if (change.field === "leads") {
-            const leadId = change.value.id;
-            console.log("New lead ID:", leadId);
+          if (change.field === "leadgen") {
+            if (!entry.changes || entry.changes.length === 0) {
+              console.log("No changes found in the webhook entry.");
+              break;
+            }
+            if (entry.changes[0].field !== "leadgen") {
+              console.log("The change field is not leadgen.");
+              break;
+            }
+            const page_id = entry.changes[0].value.page_id;
+            if (!page_id) {
+              console.log("Page ID not found in the webhook payload.");
+            }
+            const validate_page = await this._pageSessionService.validateMetaPageExists(page_id);
+            console.log(validate_page);
+            const lead_id = change.value.leadgen_id;
+            console.log("New lead ID:", lead_id);
 
             // TODO: Fetch full lead details using Graph API
             // this.fetchLeadDetails(leadId);

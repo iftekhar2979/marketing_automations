@@ -30,7 +30,9 @@ import { BullModule } from "@nestjs/bull";
 import { PushNotificationProccessor } from "./bull/processors/pushNotificationQueue";
 import { FirebaseModule } from "./firebase/firebase.module";
 import { GeminiModule } from "./gemini/gemini.module";
+
 import { NotificationsModule } from "./notifications/notifications.module";
+import { PageSessionModule } from "./page_session/page_session.module";
 import { SeederService } from "./seeder/seeder.service";
 import { SettingsModule } from "./settings/settings.module";
 import { SocketModule } from "./socket/socket.module";
@@ -105,6 +107,7 @@ import { SocketModule } from "./socket/socket.module";
     SettingsModule,
     SocketModule,
     NotificationsModule,
+    PageSessionModule,
   ],
   controllers: [AppController],
   providers: [

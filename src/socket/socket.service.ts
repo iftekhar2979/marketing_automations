@@ -1,16 +1,14 @@
+import { InjectQueue } from "@nestjs/bull";
 import { Injectable } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Server } from "socket.io";
-import { Repository } from "typeorm";
-// import mongoose, { Model, ObjectId } from 'mongoose';
-import { InjectQueue } from "@nestjs/bull";
 import { Queue } from "bull";
-import { Socket } from "socket.io";
+import { Server, Socket } from "socket.io";
 import { Conversations } from "src/conversations/entities/conversations.entity";
 import { Messages } from "src/messages/entities/messages.entity";
 import { ParticipantsService } from "src/participants/participants.service";
 import { UserService } from "src/user/user.service";
+import { Repository } from "typeorm";
 
 @Injectable()
 // @UseGuards(WsJwtGuard)
@@ -83,7 +81,7 @@ export class SocketService {
     }
   }
   async handleIncomingMessage(data: any, server: Server) {
-    console.log("💾 Saving message to DB:", data);
+    console.log("💾 Server:", server);
 
     // 2. Emit to receiver via ROOM (this uses Redis adapter automatically!)
     server.to(`user:${data.conversationId}`).emit("new-message", data);

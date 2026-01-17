@@ -5,22 +5,30 @@ import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cache } from "cache-manager";
 import Redis from "ioredis";
+import { createClient } from "redis";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
 import { Logger } from "winston";
 
 @Injectable()
 export class RedisService implements OnModuleInit {
   private redis: Redis;
+  private client = createClient({
+    socket: {
+      host: this._configService.get<string>("REDIS_HOST"),
+      port: this._configService.get<number>("REDIS_PORT"),
+    },
+
+    // Add password if needed:
+    // password: process.env.REDIS_PASSWORD,
+  });
   constructor(
     @Inject(CACHE_MANAGER) private _cacheManager: Cache, // Inject CacheManager
     @InjectLogger() private readonly _logger: Logger,
     private readonly _configService: ConfigService
-  ) {}
+  ) {
+    this.client.connect().catch(console.error);
+  }
   onModuleInit() {
-    this.redis = new Redis({
-      host: this._configService.get<string>("REDIS_HOST"),
-      port: this._configService.get<number>("REDIS_PORT"),
-    });
     console.log("Redis IntiaLized");
 
     // this.redis.monitor((err, monitor) => {
@@ -76,5 +84,8 @@ export class RedisService implements OnModuleInit {
   }
   async getRedisClient(): Promise<Redis> {
     return this.redis;
+  }
+  getClient() {
+    return this.client;
   }
 }

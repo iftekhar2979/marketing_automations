@@ -1,0 +1,173 @@
+// meta-business-profiles.controller.ts
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Patch,
+} from "@nestjs/common";
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { UpdateMetaBusinessProfileDto } from "./dto/update_meta_buisness_profile.dto";
+import { metaBuisnessProfiles } from "./entites/page_session.entity";
+import { PageSessionService } from "./page_session.service";
+
+@ApiTags("Meta Business Profiles")
+@Controller("meta-business-profiles")
+export class PageSessionController {
+  constructor(private readonly _metaBusinessProfilesService: PageSessionService) {}
+
+  //   @Post()
+  //   @HttpCode(HttpStatus.CREATED)
+  //   @ApiOperation({ summary: "Create a new Meta business profile" })
+  //   @ApiResponse({
+  //     status: 201,
+  //     description: "Profile created successfully",
+  //     type: metaBuisnessProfiles,
+  //   })
+  //   @ApiResponse({
+  //     status: 400,
+  //     description: "Invalid page ID or missing required fields",
+  //   })
+  //   create(@Body() createProfileDto: CreateMetaBusinessProfileDto): Promise<metaBuisnessProfiles> {
+  //     return this._metaBusinessProfilesService.create(createProfileDto);
+  //   }
+
+  //   @Get()
+  //   @ApiOperation({ summary: "Get all Meta business profiles" })
+  //   @ApiResponse({
+  //     status: 200,
+  //     description: "List of all profiles",
+  //     type: [metaBuisnessProfiles],
+  //   })
+  //   findAll(): Promise<metaBuisnessProfiles[]> {
+  //     return this._metaBusinessProfilesService.findAll();
+  //   }
+
+  @Get()
+  @ApiOperation({ summary: "Get all Meta business profiles" })
+  @ApiResponse({
+    status: 200,
+    description: "List of all profiles",
+    type: [metaBuisnessProfiles],
+  })
+  retriveAll() {
+    return this._metaBusinessProfilesService.syncWithMeta();
+  }
+  // @Get("by-user/:userId")
+  // @ApiOperation({ summary: "Get all profiles for a specific user" })
+  // @ApiParam({
+  //   name: "userId",
+  //   description: "The user ID to filter profiles",
+  // })
+  // @ApiResponse({
+  //   status: 200,
+  //   description: "List of profiles for the user",
+  //   type: [metaBuisnessProfiles],
+  // })
+  // findByUserId(@Param("userId") userId: string): Promise<metaBuisnessProfiles[]> {
+  //   return this._metaBusinessProfilesService.findByUserId(userId);
+  // }
+
+  @Get("by-page/:pageId")
+  @ApiOperation({ summary: "Get a profile by Meta page ID" })
+  @ApiParam({
+    name: "pageId",
+    description: "The Meta page ID",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Profile found",
+    type: metaBuisnessProfiles,
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Profile not found",
+  })
+  findByPageId(@Param("pageId") pageId: string): Promise<metaBuisnessProfiles> {
+    return this._metaBusinessProfilesService.findByPageId(pageId);
+  }
+
+  @Get(":id")
+  @ApiOperation({ summary: "Get a profile by ID" })
+  @ApiParam({
+    name: "id",
+    description: "The profile ID",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Profile found",
+    type: metaBuisnessProfiles,
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Profile not found",
+  })
+  findOne(@Param("id", ParseIntPipe) id: number): Promise<metaBuisnessProfiles> {
+    return this._metaBusinessProfilesService.findOne(id);
+  }
+
+  @Patch(":id")
+  @ApiOperation({ summary: "Update a Meta business profile" })
+  @ApiParam({
+    name: "id",
+    description: "The profile ID",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Profile updated successfully",
+    type: metaBuisnessProfiles,
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Profile not found",
+  })
+  update(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() updateProfileDto: UpdateMetaBusinessProfileDto
+  ): Promise<metaBuisnessProfiles> {
+    return this._metaBusinessProfilesService.update(id, updateProfileDto);
+  }
+
+  @Delete(":id")
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: "Delete a Meta business profile" })
+  @ApiParam({
+    name: "id",
+    description: "The profile ID",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Profile deleted successfully",
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Profile not found",
+  })
+  remove(@Param("id", ParseIntPipe) id: number): Promise<{ message: string }> {
+    return this._metaBusinessProfilesService.remove(id);
+  }
+
+  //   @Post(":id/sync")
+  //   @HttpCode(HttpStatus.OK)
+  //   @ApiOperation({ summary: "Sync profile data with Meta API" })
+  //   @ApiParam({
+  //     name: "id",
+  //     description: "The profile ID",
+  //   })
+  //   @ApiResponse({
+  //     status: 200,
+  //     description: "Profile synced successfully with latest Meta data",
+  //     type: metaBuisnessProfiles,
+  //   })
+  //   @ApiResponse({
+  //     status: 404,
+  //     description: "Profile not found",
+  //   })
+  //   syncWithMeta(@Param("id", ParseIntPipe) id: number): Promise<metaBuisnessProfiles> {
+  //     return this._metaBusinessProfilesService.syncWithMeta(id);
+  //   }
+}

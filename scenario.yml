@@ -1,0 +1,41 @@
+# my-scenario.yml
+config:
+  target: "http://localhost:4500"
+  phases:
+    - duration: 60
+      arrivalRate: 10  # → 600 virtual users total
+  engines:
+    socketio-v3: {}
+
+scenarios:
+  - name: "Valid Socket.IO Load Test"
+    engine: socketio-v3
+    flow:
+      # Optional delay after connection
+      - think: 1
+
+      # Emit on default namespace (/) — ✅ supported
+      - emit:
+          channel: "hello"
+          data: "world"
+
+      # Emit object on default namespace — ✅ supported
+      - emit:
+          channel: "hello"
+          data:
+            id: 42
+            status: "in progress"
+            tags: ["tag1", "tag2"]
+
+      # ⚠️ REMOVED: /my-namespace (not implemented on server)
+
+      # Emit "ping" and expect "pong" ack — ✅ but only if server responds!
+      - emit:
+          channel: "ping"
+        acknowledge:
+          match:
+            value: "pong"
+          # If your server doesn't reply with { value: "pong" }, this will fail!
+
+      # Hold connection for 30s before disconnecting
+      - think: 30
