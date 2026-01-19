@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Exclude } from "class-transformer";
+import { Lead } from "src/leads_info/entities/lead.entity";
 import { MetaBuisnessProfiles } from "src/page_session/entites/meta_buisness.entity";
 import {
   Column,
@@ -8,6 +9,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -15,13 +17,10 @@ import {
 import { UserRoles } from "../enums/role.enum";
 import { Verification } from "./verification.entity";
 
-export enum USERSTATUS {
+export enum USER_STATUS {
   VERIFIED = "verified",
   NOT_VERIFIED = "not_verified",
 }
-/**
- * It describes the schema for user table in database.
- */
 @Entity({ name: "users" })
 export class User {
   @PrimaryGeneratedColumn("uuid")
@@ -40,9 +39,9 @@ export class User {
   @Column({ type: "varchar", nullable: true })
   @ApiProperty()
   image: string;
-  @Column({ type: "varchar", nullable: true, default: USERSTATUS.NOT_VERIFIED })
+  @Column({ type: "varchar", nullable: true, default: USER_STATUS.NOT_VERIFIED })
   @ApiProperty()
-  status: USERSTATUS.NOT_VERIFIED;
+  status: USER_STATUS.NOT_VERIFIED;
   @Column({ nullable: true, select: false }) // Critical: Never select by default
   @Exclude()
   password: string;
@@ -76,6 +75,11 @@ export class User {
   @JoinColumn({ name: "business_profile_id" })
   buisness_profiles: MetaBuisnessProfiles;
 
+  //Relationship between user and leads
+  @OneToMany(() => Lead, (lead) => lead.agency)
+  leads: Lead[];
+
+  //Relation ship between user and verification
   @OneToOne(() => Verification, (verification) => verification.user, {
     nullable: true,
     onDelete: "SET NULL",
