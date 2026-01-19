@@ -36,6 +36,9 @@ import { PageSessionModule } from "./page_session/page_session.module";
 import { SeederService } from "./seeder/seeder.service";
 import { SettingsModule } from "./settings/settings.module";
 import { SocketModule } from "./socket/socket.module";
+import { LeadsInfoModule } from './leads_info/leads_info.module';
+import { AgencyProfilesModule } from './agency_profiles/agency_profiles.module';
+import { ContructorsModule } from './contructors/contructors.module';
 /**
  * It is the root module for the application in we import all feature modules and configure modules and packages that are common in feature modules. Here we also configure the middlewares.
  *
@@ -108,6 +111,9 @@ import { SocketModule } from "./socket/socket.module";
     SocketModule,
     NotificationsModule,
     PageSessionModule,
+    LeadsInfoModule,
+    AgencyProfilesModule,
+    ContructorsModule,
   ],
   controllers: [AppController],
   providers: [

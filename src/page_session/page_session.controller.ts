@@ -12,7 +12,7 @@ import {
 } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { UpdateMetaBusinessProfileDto } from "./dto/update_meta_buisness_profile.dto";
-import { metaBuisnessProfiles } from "./entites/page_session.entity";
+import { MetaBuisnessProfiles } from "./entites/meta_buisness.entity";
 import { PageSessionService } from "./page_session.service";
 
 @ApiTags("Meta Business Profiles")
@@ -52,7 +52,7 @@ export class PageSessionController {
   @ApiResponse({
     status: 200,
     description: "List of all profiles",
-    type: [metaBuisnessProfiles],
+    type: [MetaBuisnessProfiles],
   })
   retriveAll() {
     return this._metaBusinessProfilesService.syncWithMeta();
@@ -81,13 +81,13 @@ export class PageSessionController {
   @ApiResponse({
     status: 200,
     description: "Profile found",
-    type: metaBuisnessProfiles,
+    type: MetaBuisnessProfiles,
   })
   @ApiResponse({
     status: 404,
     description: "Profile not found",
   })
-  findByPageId(@Param("pageId") pageId: string): Promise<metaBuisnessProfiles> {
+  findByPageId(@Param("pageId") pageId: string): Promise<MetaBuisnessProfiles> {
     return this._metaBusinessProfilesService.findByPageId(pageId);
   }
 
@@ -100,13 +100,13 @@ export class PageSessionController {
   @ApiResponse({
     status: 200,
     description: "Profile found",
-    type: metaBuisnessProfiles,
+    type: MetaBuisnessProfiles,
   })
   @ApiResponse({
     status: 404,
     description: "Profile not found",
   })
-  findOne(@Param("id", ParseIntPipe) id: number): Promise<metaBuisnessProfiles> {
+  findOne(@Param("id", ParseIntPipe) id: number): Promise<MetaBuisnessProfiles> {
     return this._metaBusinessProfilesService.findOne(id);
   }
 
@@ -119,7 +119,7 @@ export class PageSessionController {
   @ApiResponse({
     status: 200,
     description: "Profile updated successfully",
-    type: metaBuisnessProfiles,
+    type: MetaBuisnessProfiles,
   })
   @ApiResponse({
     status: 404,
@@ -128,7 +128,7 @@ export class PageSessionController {
   update(
     @Param("id", ParseIntPipe) id: number,
     @Body() updateProfileDto: UpdateMetaBusinessProfileDto
-  ): Promise<metaBuisnessProfiles> {
+  ): Promise<MetaBuisnessProfiles> {
     return this._metaBusinessProfilesService.update(id, updateProfileDto);
   }
 

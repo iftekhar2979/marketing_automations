@@ -102,6 +102,7 @@ export class StripeController {
       for (const entry of body.entry) {
         for (const change of entry.changes) {
           if (change.field === "leadgen") {
+            console.log(entry.changes);
             if (!entry.changes || entry.changes.length === 0) {
               console.log("No changes found in the webhook entry.");
               break;
@@ -116,9 +117,21 @@ export class StripeController {
             }
             const validate_page = await this._pageSessionService.validateMetaPageExists(page_id);
             console.log(validate_page);
+            if (!validate_page) {
+              console.log(`Lead not found: ${page_id}`);
+              // break;
+            }
+            if (!validate_page.data[page_id]) {
+              console.log(`No data found for page ID: ${page_id}`);
+              // break;
+            }
             const lead_id = change.value.leadgen_id;
-            console.log("New lead ID:", lead_id);
-
+            const validate_lead = await this._pageSessionService.leadInformations({
+              access_token: validate_page.data[page_id].access_token,
+              lead_id,
+            });
+            // console.log("New lead ID:", lead_id);
+            console.log(validate_lead);
             // TODO: Fetch full lead details using Graph API
             // this.fetchLeadDetails(leadId);
           }

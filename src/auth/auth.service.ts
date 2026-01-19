@@ -398,7 +398,7 @@ export class AuthService {
         last_name: user.last_name,
         email: user.email,
         roles: user.roles,
-        isActive: user.isActive,
+        isActive: user.is_active,
         status: user.status,
       },
       tokens: {

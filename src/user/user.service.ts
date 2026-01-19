@@ -35,7 +35,9 @@ export class UserService {
     qb.where(":role = ANY (user.roles)", { role: UserRoles.USER });
     // Search by first_name or last_name
     if (search) {
-      qb.andWhere(`(user.first_name ILIKE :search OR user.last_name ILIKE :search)`, { search: `%${search}%` });
+      qb.andWhere(`(user.first_name ILIKE :search OR user.last_name ILIKE :search)`, {
+        search: `%${search}%`,
+      });
     }
     if (query.status) {
       qb.where("(user.status ILIKE :status)", { status: query.status });
@@ -165,7 +167,7 @@ export class UserService {
   }
   async updateUserUpdatedTimeAndOfflineStatus({ user_id }: { user_id: string; user?: Partial<User> }) {
     this._logger.log(`Updating user Active Status`, UserService.name);
-    const updatedUser = await this._userRepository.update(user_id, { isActive: false });
+    const updatedUser = await this._userRepository.update(user_id, { is_active: false });
 
     if (!updatedUser) {
       throw new NotFoundException("User not found");

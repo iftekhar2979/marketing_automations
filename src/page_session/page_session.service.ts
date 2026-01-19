@@ -4,15 +4,16 @@ import { In, Repository } from "typeorm";
 
 import { HttpService } from "@nestjs/axios";
 import {
-    BadRequestException,
-    Injectable,
-    InternalServerErrorException,
-    NotFoundException,
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { UpdateMetaBusinessProfileDto } from "./dto/update_meta_buisness_profile.dto";
-import { metaBuisnessProfiles } from "./entites/page_session.entity";
+import { MetaBuisnessProfiles } from "./entites/meta_buisness.entity";
 import { FacebookPage } from "./types/buisness.types";
+import { LeadgenLead } from "./types/leadgen.types";
 import { PageDataMap } from "./types/page_info.types";
 
 @Injectable()
@@ -21,8 +22,8 @@ export class PageSessionService {
   private metaAccessToken: string;
 
   constructor(
-    @InjectRepository(metaBuisnessProfiles)
-    private readonly _profileRepository: Repository<metaBuisnessProfiles>,
+    @InjectRepository(MetaBuisnessProfiles)
+    private readonly _profileRepository: Repository<MetaBuisnessProfiles>,
     private readonly _configService: ConfigService,
     private readonly _httpService: HttpService
   ) {
@@ -40,7 +41,7 @@ export class PageSessionService {
       throw new BadRequestException(`Failed to create profile: ${error.message}`);
     }
   }
-  async findAll(): Promise<metaBuisnessProfiles[]> {
+  async findAll(): Promise<MetaBuisnessProfiles[]> {
     try {
       return await this._profileRepository.find({
         order: {
@@ -52,7 +53,7 @@ export class PageSessionService {
     }
   }
 
-  async findOne(id: number): Promise<metaBuisnessProfiles> {
+  async findOne(id: number): Promise<MetaBuisnessProfiles> {
     try {
       const profile = await this._profileRepository.findOne({
         where: { id },
@@ -69,7 +70,7 @@ export class PageSessionService {
     }
   }
 
-  async findByPageId(pageId: string): Promise<metaBuisnessProfiles> {
+  async findByPageId(pageId: string): Promise<MetaBuisnessProfiles> {
     try {
       const profile = await this._profileRepository.findOne({
         where: { page_id: pageId },
@@ -99,7 +100,7 @@ export class PageSessionService {
   //     }
   //   }
 
-  async update(id: number, updateProfileDto: UpdateMetaBusinessProfileDto): Promise<metaBuisnessProfiles> {
+  async update(id: number, updateProfileDto: UpdateMetaBusinessProfileDto): Promise<MetaBuisnessProfiles> {
     try {
       const profile = await this.findOne(id);
 
@@ -207,8 +208,31 @@ export class PageSessionService {
         })
       );
     } catch (error) {
+      //   console.log(error);
       throw new BadRequestException(
         `Invalid Meta page ID: ${error.response?.data?.error?.message || "Page not found"}`
+      );
+    }
+  }
+  async leadInformations({
+    lead_id,
+    access_token,
+  }: {
+    lead_id: string;
+    access_token: string;
+  }): Promise<LeadgenLead | any> {
+    try {
+      return await firstValueFrom(
+        this._httpService.get(`${this.metaGraphApiUrl}/${lead_id}`, {
+          params: {
+            access_token: access_token,
+          },
+        })
+      );
+    } catch (error) {
+      //   console.log(error);
+      throw new BadRequestException(
+        `Invalid Meta Lead ID: ${error.response?.data?.error?.message || "Page not found"}`
       );
     }
   }
