@@ -1,14 +1,19 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Exclude } from "class-transformer";
+import { MetaBuisnessProfiles } from "src/page_session/entites/meta_buisness.entity";
 import {
   Column,
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
 import { UserRoles } from "../enums/role.enum";
+import { Verification } from "./verification.entity";
 
 export enum USERSTATUS {
   VERIFIED = "verified",
@@ -19,9 +24,6 @@ export enum USERSTATUS {
  */
 @Entity({ name: "users" })
 export class User {
-  /**
-   * auto-generated unique uuid primary key for the table.
-   */
   @PrimaryGeneratedColumn("uuid")
   @ApiProperty()
   id: string;
@@ -38,7 +40,7 @@ export class User {
   @Column({ type: "varchar", nullable: true })
   @ApiProperty()
   image: string;
-  @Column({ type: "varchar", nullable: true, default: "not_verified" })
+  @Column({ type: "varchar", nullable: true, default: USERSTATUS.NOT_VERIFIED })
   @ApiProperty()
   status: USERSTATUS.NOT_VERIFIED;
   @Column({ nullable: true, select: false }) // Critical: Never select by default
@@ -49,21 +51,38 @@ export class User {
   fcm: string;
   @Column({ nullable: true, type: "varchar" })
   phone: string;
-  @Column({ nullable: true, type: "varchar" })
+  @Column({ nullable: true, select: false })
+  @Exclude()
   current_refresh_token: string;
 
-  @Column("enum", { array: true, enum: UserRoles, default: `{${UserRoles.AGENCY_OWNER}}` })
-  @ApiProperty({
+  @Column({
+    type: "enum",
     enum: UserRoles,
+    array: true,
     default: [UserRoles.AGENCY_OWNER],
-    description: `String array, containing enum values, either ${UserRoles.USER} or ${UserRoles.ADMIN}`,
   })
   roles: UserRoles[];
 
   @Column({ type: "boolean", default: false })
   @ApiProperty({ default: false })
-  isActive: boolean;
+  is_active: boolean;
 
+  //Relationship
+
+  @ManyToOne(() => MetaBuisnessProfiles, (profile) => profile.users, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
+  @JoinColumn({ name: "business_profile_id" })
+  buisness_profiles: MetaBuisnessProfiles;
+
+  @OneToOne(() => Verification, (verification) => verification.user, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
+  verification: Verification;
+
+  //date properties
   @CreateDateColumn()
   @ApiProperty()
   createdAt: Date;
