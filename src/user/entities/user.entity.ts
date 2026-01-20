@@ -41,7 +41,7 @@ export class User {
   image: string;
   @Column({ type: "varchar", nullable: true, default: USER_STATUS.NOT_VERIFIED })
   @ApiProperty()
-  status: USER_STATUS.NOT_VERIFIED;
+  status?: USER_STATUS;
   @Column({ nullable: true, select: false }) // Critical: Never select by default
   @Exclude()
   password: string;

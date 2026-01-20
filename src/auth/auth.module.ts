@@ -45,7 +45,7 @@ import { LocalStrategy } from "./strategies/local.strategy";
     forwardRef(() => UserModule),
     MailModule,
     OtpModule,
-    BullModule.registerQueue({ name: "notifications" }),
+    BullModule.registerQueue({ name: "notifications" }, { name: "otp" }),
   ],
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy],

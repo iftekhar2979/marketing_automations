@@ -4,32 +4,36 @@ import {
   Get,
   Param,
   Patch,
+  Post,
   Query,
   Request,
   UseGuards,
   UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
-  ApiTags,
   ApiBearerAuth,
-  ApiOkResponse,
-  ApiUnauthorizedResponse,
   ApiForbiddenResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiQuery,
+  ApiTags,
+  ApiUnauthorizedResponse,
 } from "@nestjs/swagger";
-import { GetFileDestination, GetUser, GetUserInformation } from "../auth/decorators/get-user.decorator";
-import { User } from "./entities/user.entity";
-import { UpdateUserDto } from "./dto/update-user.dto";
-import { AccountActivatedGuard } from "./guards/account-activation.guard";
-import { UserService } from "./user.service";
-import { ApiResponseDto } from "../shared/dto/base-response.dto";
-import { FileInterceptor } from "@nestjs/platform-express";
-import { multerConfig } from "src/common/multer/multer.config";
+import { CreateAgencyOwnerDto } from "src/agency_profiles/dtos/create_agency_owner.dto";
 import { JwtAuthenticationGuard } from "src/auth/guards/session-auth.guard";
+import { multerConfig } from "src/common/multer/multer.config";
+import { GetFileDestination, GetUser, GetUserInformation } from "../auth/decorators/get-user.decorator";
+import { ApiResponseDto } from "../shared/dto/base-response.dto";
+import { Roles } from "./decorators/roles.decorator";
+import { CreateUserAddressDto } from "./dto/create-user-address.dto";
 import { GetUsersQueryDto } from "./dto/get-user.query.dto";
 import { UpdateUserProfileDto } from "./dto/update-profile.dto";
-import { CreateUserAddressDto } from "./dto/create-user-address.dto";
+import { UpdateUserDto } from "./dto/update-user.dto";
+import { User, USER_STATUS } from "./entities/user.entity";
+import { UserRoles } from "./enums/role.enum";
+import { AccountActivatedGuard } from "./guards/account-activation.guard";
+import { UserService } from "./user.service";
 import { UserAddressService } from "./userAddress.service";
 
 /**
@@ -46,6 +50,17 @@ export class UserController {
     private readonly _userAddressService: UserAddressService
   ) {}
 
+  @Post("")
+  @ApiOperation({ summary: "Create Agency Owner " })
+  @UseGuards(JwtAuthenticationGuard)
+  @Roles(UserRoles.ADMIN)
+  createAgencyOwner(@Body() body: CreateAgencyOwnerDto) {
+    return this._userService.createUser({
+      ...body,
+      status: USER_STATUS.VERIFIED,
+      roles: [UserRoles.AGENCY_OWNER],
+    });
+  }
   @Get("all")
   @ApiOperation({ summary: "Get all users with role USER (paginated + searchable)" })
   @ApiQuery({ name: "page", required: false, example: 1 })

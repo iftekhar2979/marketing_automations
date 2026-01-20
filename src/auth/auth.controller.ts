@@ -9,9 +9,8 @@ import {
   Patch,
   Post,
   Req,
-  Res,
   UseGuards,
-  UseInterceptors,
+  UseInterceptors
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import {
@@ -29,7 +28,6 @@ import {
 } from "@nestjs/swagger";
 import { Queue } from "bull";
 import { Request } from "express";
-import { FastifyReply } from "fastify";
 import { MailService } from "src/mail/mail.service";
 import { OtpService } from "src/otp/otp.service";
 import { UserService } from "src/user/user.service";
@@ -125,11 +123,7 @@ export class AuthController {
   @ApiCreatedResponse({ description: "Login successful", type: UserResponseDto })
   @ApiUnauthorizedResponse({ description: "Invalid credentials" })
   @ApiBody({ required: true, type: LoginUserDto })
-  async loginPassportLocal(
-    @Body() loginDto: LoginUserDto,
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: FastifyReply
-  ) {
+  async loginPassportLocal(@Body() loginDto: LoginUserDto, @Req() req: Request) {
     return await this._authService.login(loginDto);
   }
 

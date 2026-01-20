@@ -43,5 +43,5 @@ export class CreateAgencyOwnerDto {
   @IsString()
   @MinLength(8)
   @MaxLength(20)
-  page_id: string;
+  page_id?: string;
 }

@@ -16,6 +16,7 @@ import { Queue } from "bull";
 import { Request } from "express";
 import { OtpType } from "src/otp/entities/otp.entity";
 import { OtpService } from "src/otp/otp.service";
+import { RedisService } from "src/redis/redis.service";
 import { AccountStatus, CreateVerificationDto } from "src/user/dto/verification-dto";
 import { Verification } from "src/user/entities/verification.entity";
 import { DataSource, Repository } from "typeorm";
@@ -49,8 +50,8 @@ export class AuthService {
     private readonly _configService: ConfigService,
     @InjectLogger() private readonly _logger: Logger,
     private readonly _dataSource: DataSource,
-
-    @InjectQueue("notifications") private readonly _queue: Queue
+    private readonly _redisService: RedisService,
+    @InjectQueue("otp") private _otpQueue: Queue
   ) {
     this._FR_HOST = _configService.get<string>(`FR_BASE_URL`);
   }
@@ -62,24 +63,24 @@ export class AuthService {
     try {
       const { password, email, ...rest } = createUserDto;
 
-      // 1. Check if user exists before hashing (performance optimization)
-      const existingUser = await queryRunner.manager.findOne(User, { where: { email } });
-      if (existingUser) throw new ConflictException("Email already registered");
-
       // 2. Hash password with argon2
       const hashedPassword = await argon2hash(password);
 
-      // 3. Create User Instance
-      const userInstance = queryRunner.manager.create(User, {
-        ...rest,
-        email,
-        password: hashedPassword,
-      });
-      const savedUser = await queryRunner.manager.save(userInstance);
+      const user = await this._dataSource
+        .createQueryBuilder()
+        .insert()
+        .into(User)
+        .values({
+          ...rest,
+          email,
+          password: hashedPassword,
+        })
+        .returning("id,first_name, last_name, email, id, roles, status, image")
+        .execute();
 
       // 4. Create Verification Record
       await queryRunner.manager.insert("verifications", {
-        user_id: savedUser.id,
+        user_id: user.raw[0].id,
         status: AccountStatus.INACTIVE,
       });
 
@@ -87,24 +88,29 @@ export class AuthService {
       await queryRunner.commitTransaction();
       // 6. Generate OTP
 
-      const otp = await this._otpService.createOtp(savedUser.id, OtpType.REGISTRATION);
       // 7. Post-Transaction: Communication (Email/SMS)
       // We do this outside the transaction so if email fails, user stays created
-      const token = await this.signTokenSendEmailAndSMS(savedUser, req, otp.otp);
+      const token = await this.signTokenSendEmailAndSMS(user.raw[0]);
+      await this._otpQueue.add("create", { user: user.raw[0], otpType: OtpType.REGISTRATION });
 
       return {
-        status: "success",
-        data: savedUser,
+        ok: true,
+        data: user.raw[0],
         token,
       };
     } catch (err) {
       console.log(err);
+
       await queryRunner.rollbackTransaction();
-      this.handleDatabaseError(err);
+      if (err.code === "23505") {
+        throw new ConflictException("Email already exists");
+      }
+      throw err;
     } finally {
       await queryRunner.release();
     }
   }
+
   async updateRefreshToken(userId: string, refreshToken: string) {
     const hashedRefreshToken = await argon2hash(refreshToken);
     await this._userRepository.update(userId, {
@@ -247,13 +253,13 @@ export class AuthService {
     userinfo.password = hashedPassword;
     this._logger.log("Saving Updated User", AuthService.name);
     await this._userRepository.save(userinfo);
-    if (user.fcm) {
-      await this._queue.add("push_notification", {
-        token: user?.fcm,
-        title: "Password Reset Successful",
-        body: "Your password has been reset successfully",
-      });
-    }
+    // if (user.fcm) {
+    //   await this._queue.add("push_notification", {
+    //     token: user?.fcm,
+    //     title: "Password Reset Successful",
+    //     body: "Your password has been reset successfully",
+    //   });
+    // }
     return { message: "Password reset successfully", status: "success", data: null };
   }
   async updatePassword(resetPasswordDto: UpdatePassword, user) {
@@ -357,7 +363,6 @@ export class AuthService {
 
     // 1. Fetch user with password and refresh token explicitly selected
     // Since we set 'select: false' in the entity for security
-    console.log(email);
     const user = await this._userRepository
       .createQueryBuilder("user")
       .addSelect("user.password")
@@ -408,12 +413,7 @@ export class AuthService {
     };
   }
   async signToken(user: any): Promise<string> {
-    // console.log(user)
     const payload: JwtPayload = { id: user.id };
-    // console.log(payload)
-
-    // console.log(userInfo)
-
     this._logger.log("Signing token", AuthService.name);
     if (!user.first_name) {
       // console.log(payload)
@@ -431,21 +431,18 @@ export class AuthService {
     });
   }
 
-  async signTokenSendEmailAndSMS(user: User, req: Request, verificationCode: string) {
+  async signTokenSendEmailAndSMS(user: User) {
     const token: string = await this.signToken(user);
-
-    this._logger.log("Sending welcome email", AuthService.name);
-    this._mailService.sendUserConfirmationMail(user, verificationCode);
 
     // TODO: Send confirmation SMS to new user using Twilio
 
     return token;
   }
   async resendOtp({ user, otpType, userInfo }: { userInfo?: any; user?: any; otpType?: OtpType }) {
-    console.log(user.status);
     if (!user.verification_type || otpType !== OtpType.REGISTRATION) {
-      const otp = await this._otpService.createOtp(user.id, OtpType.FORGOT_PASSWORD);
-      await this._queue.add("mail_notification", { user, otp: otp.otp });
+      // const otp = await this._otpService.createOtp(user.id, OtpType.FORGOT_PASSWORD);
+      // await this._queue.add("mail_notification", { user, otp: otp.otp });
+      const otp = await this._otpQueue.add("otp-creation", { user, otpType: OtpType.FORGOT_PASSWORD });
       return { message: "OTP resent successfully", status: "success", data: null };
     }
 

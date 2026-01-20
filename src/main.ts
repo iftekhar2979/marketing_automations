@@ -5,11 +5,9 @@ import { NestFactory, Reflector } from "@nestjs/core";
 import { ConfigService } from "@nestjs/config";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-import csurf from "csurf";
 import { urlencoded } from "express";
 import helmet from "helmet";
 import hpp from "hpp";
-import xssClean from "xss-clean";
 import { AppModule } from "./app.module";
 // FIXME: have it if you are using secret manager
 // import { loadSecretsFromAWS } from "./configs/app.config";
@@ -86,7 +84,6 @@ async function bootstrap() {
   // app.enableCors(corsOptions);
   app.use(cookieParser());
   app.use(compression());
-
   // app.use(json({ limit: "50kb" }));
   app.use(urlencoded({ extended: true, limit: "50kb" }));
 
@@ -97,16 +94,16 @@ async function bootstrap() {
     configService.get<string>("STAGE") == "dev"
       ? ["GET", "HEAD", "OPTIONS", "DELETE", "POST", "PATCH", "PUT"] // for devlopment we ignoring all
       : ["GET", "HEAD", "OPTIONS"];
-  app.use(
-    csurf({
-      cookie: {
-        httpOnly: true, // Prevent JavaScript access to the CSRF cookie
-        secure: process.env.NODE_ENV === "PROD", // Set to secure only in production
-        sameSite: "strict", // Restrict the cookie to same-site requests
-      },
-      ignoreMethods,
-    })
-  );
+  // app.use(
+  //   csurf({
+  //     cookie: {
+  //       httpOnly: true, // Prevent JavaScript access to the CSRF cookie
+  //       secure: process.env.NODE_ENV === "PROD", // Set to secure only in production
+  //       sameSite: "strict", // Restrict the cookie to same-site requests
+  //     },
+  //     ignoreMethods,
+  //   })
+  // );
   app.use(
     helmet({
       hsts: {
@@ -162,7 +159,7 @@ async function bootstrap() {
     next();
   });
 
-  app.use(xssClean());
+  // app.use(xssClean());
   app.use(hpp());
 
   app.useGlobalPipes(new ValidationPipe({ transform: true, stopAtFirstError: true }));

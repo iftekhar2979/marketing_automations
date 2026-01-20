@@ -1,9 +1,9 @@
-import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { CreateAdminDto } from "src/auth/dto/create-user.dto";
 import { pagination } from "src/shared/utils/pagination";
 import { argon2hash } from "src/utils/hashes/argon2";
-import { Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 import { MailService } from "../mail/mail.service";
 import { InjectLogger } from "../shared/decorators/logger.decorator";
 import { GetUsersQueryDto } from "./dto/get-user.query.dto";
@@ -22,9 +22,30 @@ export class UserService {
     @InjectRepository(User) private _userRepository: Repository<User>,
     @InjectRepository(Verification) private _verificationRepo: Repository<Verification>,
     @InjectLogger() private readonly _logger: Logger,
-    private readonly _mailService: MailService
+    private readonly _mailService: MailService,
+    private _dataSource: DataSource
   ) {}
 
+  async createUser(userData: Partial<User>): Promise<{ data: Partial<User>; ok: boolean; message: string }> {
+    const queryRunner = this._dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const userExists = await this._userRepository.findOne({ where: { email: userData.email } });
+    if (userExists) {
+      throw new BadRequestException("User with this email already exists");
+    }
+    const hashedPassword = await argon2hash(userData.password);
+    const newUser = this._userRepository.create({
+      ...userData,
+      password: hashedPassword,
+    });
+    return {
+      ok: true,
+      data: await this._userRepository.save(newUser),
+      message: "User created successfully",
+    };
+  }
   async getUserFilters(query: GetUsersQueryDto) {
     const { page = 1, limit = 10, search } = query;
     const take = Number(limit);

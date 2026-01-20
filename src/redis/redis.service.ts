@@ -4,14 +4,12 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cache } from "cache-manager";
-import Redis from "ioredis";
-import { createClient } from "redis";
+import { createClient, RedisClientType } from "redis";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
 import { Logger } from "winston";
-
 @Injectable()
 export class RedisService implements OnModuleInit {
-  private redis: Redis;
+  private redis: RedisClientType;
   private client = createClient({
     socket: {
       host: this._configService.get<string>("REDIS_HOST"),
@@ -28,8 +26,10 @@ export class RedisService implements OnModuleInit {
   ) {
     this.client.connect().catch(console.error);
   }
-  onModuleInit() {
-    console.log("Redis IntiaLized");
+  async onModuleInit() {
+    if (!this.client.isOpen) {
+      await this.client.connect();
+    }
 
     // this.redis.monitor((err, monitor) => {
     //   if (err) {
@@ -82,9 +82,7 @@ export class RedisService implements OnModuleInit {
       this._logger.debug(`Invalidated keys matching pattern: ${pattern}`);
     }
   }
-  async getRedisClient(): Promise<Redis> {
-    return this.redis;
-  }
+
   getClient() {
     return this.client;
   }

@@ -31,14 +31,15 @@ import { PushNotificationProccessor } from "./bull/processors/pushNotificationQu
 import { FirebaseModule } from "./firebase/firebase.module";
 import { GeminiModule } from "./gemini/gemini.module";
 
+import { AgencyProfilesModule } from "./agency_profiles/agency_profiles.module";
+import { OtpQueueProcessor } from "./bull/processors/OtpQueue";
+import { ContructorsModule } from "./contructors/contructors.module";
+import { LeadsInfoModule } from "./leads_info/leads_info.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { PageSessionModule } from "./page_session/page_session.module";
 import { SeederService } from "./seeder/seeder.service";
 import { SettingsModule } from "./settings/settings.module";
 import { SocketModule } from "./socket/socket.module";
-import { LeadsInfoModule } from './leads_info/leads_info.module';
-import { AgencyProfilesModule } from './agency_profiles/agency_profiles.module';
-import { ContructorsModule } from './contructors/contructors.module';
 /**
  * It is the root module for the application in we import all feature modules and configure modules and packages that are common in feature modules. Here we also configure the middlewares.
  *
@@ -126,6 +127,7 @@ import { ContructorsModule } from './contructors/contructors.module';
     // ImageProcessor,
     PushNotificationProccessor,
     SeederService,
+    OtpQueueProcessor,
     // ProductBoostgService,
   ],
 })

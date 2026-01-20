@@ -2,9 +2,8 @@ import { MailerModule } from "@nestjs-modules/mailer";
 import { PugAdapter } from "@nestjs-modules/mailer/dist/adapters/pug.adapter";
 import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
-import { MailService } from "./mail.service";
 import { join } from "path";
-import { FROM_EMAIL } from "./constants";
+import { MailService } from "./mail.service";
 
 /**
  * It is a feature module where we keep the service and code related to mails. we import the nestjs mailer module and configure it to work with templates using pugAdapter.
@@ -48,15 +47,15 @@ console.log(process.env.SENDGRID_API_KEY);
         if (configService.get<string>("NODE_ENV") === "DEV") {
           return {
             transport: {
-              host: "smtp.sendgrid.net",
+              host: "smtp.gmail.com",
               port: 587,
               auth: {
-                user: "apikey", // <-- must be exactly this
-                pass: configService.get("SENDGRID_API_KEY"), // <-- your API key
+                user: configService.get("EMAIL_USERNAME"), // <-- must be exactly this
+                pass: configService.get("EMAIL_PASSWORD"), // <-- your API key
               },
             },
             defaults: {
-              from: '"Pet Attix" <support@petattix.com>',
+              from: `"Lucas" <${configService.get<string>("EMAIL_USERNAME")}>`,
             },
             template: {
               dir: join(__dirname, "templates"),
