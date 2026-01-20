@@ -142,4 +142,48 @@ export class StripeController {
     // Always return 200 OK quickly to acknowledge receipt
     return "EVENT_RECEIVED";
   }
+
+  @Post("minio")
+  async handleMinIOWebhook(@Body() event: WebhookEvent) {
+    console.log("Received MinIO webhook event");
+    // this.logger.log("Received MinIO webhook event");
+    // this.logger.debug(JSON.stringify(event, null, 2));
+
+    const record = event.Records[0];
+    const eventName = record.eventName;
+    const bucketName = record.s3.bucket.name;
+    const objectKey = record.s3.object.key;
+    const objectSize = record.s3.object.size;
+    const eventTime = record.eventTime;
+    const sourceIP = record.requestParameters.sourceIPAddress;
+
+    // this.logger.log(`Event: ${eventName}`);
+    // this.logger.log(`Bucket: ${bucketName}`);
+    // this.logger.log(`Object: ${objectKey}`);
+    // this.logger.log(`Size: ${objectSize} bytes`);
+    // this.logger.log(`Time: ${eventTime}`);
+    // this.logger.log(`Source IP: ${sourceIP}`);
+
+    // Process based on event type
+    if (eventName === "s3:ObjectCreated:Put") {
+      await this.handleFileUpload(bucketName, objectKey, objectSize);
+    } else if (eventName === "s3:ObjectRemoved:Delete") {
+      await this.handleFileDelete(bucketName, objectKey);
+    }
+
+    return { status: "received" };
+  }
+
+  private async handleFileUpload(bucket: string, key: string, size: number) {
+    // this.logger.log(`File uploaded: ${bucket}/${key} (${size} bytes)`);
+    console.log(`File uploaded: ${bucket}/${key} (${size} bytes)`);
+    // Add your custom logic here
+    // Example: Update database, trigger processing, etc.
+  }
+
+  private async handleFileDelete(bucket: string, key: string) {
+    // this.logger.log(`File deleted: ${bucket}/${key}`);
+    console.log(`File deleted: ${bucket}/${key}`);
+    // Add your custom logic here
+  }
 }

@@ -3,5 +3,6 @@ export enum PrimaryPaths {
   DOCUMENTS = "Documents",
   PROFILE_IMAGES = "Profile_Images",
   COVER_IMAGES = "Cover_Images",
+
   // ...
 }

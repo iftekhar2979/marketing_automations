@@ -24,9 +24,7 @@ export class S3Controller {
   @ApiOkResponse({ description: "Get S3 pre-signed URL" })
   async getPreSignedUrl(@Query() preSignedUrlDto: PreSignedUrlDTO) {
     const { fileName, primaryPath, expiresIn } = preSignedUrlDto;
-
     const result = await this.s3Service.getPreSignedUrl(fileName, primaryPath, expiresIn);
-
     return { status: "success", data: result };
   }
 
