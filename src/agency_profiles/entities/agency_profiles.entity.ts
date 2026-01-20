@@ -22,7 +22,7 @@ export class AgencyProfile {
   @ApiProperty({ description: "Unique ID for the agency profile" })
   id: string;
 
-  @Column({ type: "varchar" })
+  @Column({ type: "varchar", nullable: true })
   @ApiProperty({ example: "page_123", description: "Business Profile Page ID (Foreign Key)" })
   page_id: string;
 
@@ -50,6 +50,37 @@ export class AgencyProfile {
   contact_email: string;
 
   @Column({ type: "varchar", nullable: true })
+  @ApiProperty({ example: "john@agency.com", description: "Agency Contact Email" })
+  facebook_page_link: string;
+  @Column({ type: "varchar", nullable: true })
+  @ApiProperty({ example: "145456465456", description: "EIN" })
+  ein: string;
+
+  @Column({ type: "varchar", nullable: true })
+  @ApiProperty({ example: "145456465456", description: "National Identity Number" })
+  nid_no: string;
+
+  @Column({ type: "varchar", nullable: true })
+  @ApiProperty({ example: "145456465456", description: "National Id front picture" })
+  nid_front: string;
+
+  @Column({ type: "varchar", nullable: true })
+  @ApiProperty({ example: "145456465456", description: "National Id back picture" })
+  nid_back: string;
+
+  @Column({ type: "varchar", nullable: true })
+  @ApiProperty({ example: "145456465456", description: "Tax Id No" })
+  tax_no: string;
+
+  @Column({ type: "varchar", nullable: true })
+  @ApiProperty({ example: "tax-font.jpg", description: "Image" })
+  tax_id_front: string;
+
+  @Column({ type: "varchar", nullable: true })
+  @ApiProperty({ example: "tax-back.jpg", description: "Image" })
+  tax_id_back: string;
+
+  @Column({ type: "varchar", nullable: true })
   @ApiProperty({ example: "+1234567890", description: "Agency Contact Phone" })
   contact_phone: string;
 
@@ -74,15 +105,13 @@ export class AgencyProfile {
   @OneToOne(() => MetaBuisnessProfiles, (profile) => profile.agency_profile, {
     onDelete: "CASCADE",
   })
-  @JoinColumn({ name: "business_profile_id" }) // This column will store the FK
+  @JoinColumn({ name: "business_profile_id" })
   buisness_profile: MetaBuisnessProfiles;
   // One-to-One: Many Agency Profiles belong to one Agency Owner (User)
-  @ManyToOne(() => User, {
+  @ManyToOne(() => User, (user) => user.agency_profiles, {
     onDelete: "CASCADE",
-    eager: false,
   })
   @JoinColumn({ name: "agency_owner_id" })
-  @ApiProperty({ type: () => User })
   agency_owner: User;
 
   // One-to-one: One Business Profile has one Agency Profiles

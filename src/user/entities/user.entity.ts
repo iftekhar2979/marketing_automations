@@ -1,5 +1,6 @@
 import { ApiProperty } from "@nestjs/swagger";
 import { Exclude } from "class-transformer";
+import { AgencyProfile } from "src/agency_profiles/entities/agency_profiles.entity";
 import { Lead } from "src/leads_info/entities/lead.entity";
 import { MetaBuisnessProfiles } from "src/page_session/entites/meta_buisness.entity";
 import {
@@ -78,7 +79,8 @@ export class User {
   //Relationship between user and leads
   @OneToMany(() => Lead, (lead) => lead.agency)
   leads: Lead[];
-
+  @OneToMany(() => AgencyProfile, (agency) => agency.agency_owner)
+  agency_profiles: AgencyProfile[];
   //Relation ship between user and verification
   @OneToOne(() => Verification, (verification) => verification.user, {
     nullable: true,

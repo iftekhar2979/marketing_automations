@@ -10,10 +10,11 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import mime from "mime-types";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
 import { Logger } from "winston";
 import { PrimaryPaths } from "./enums/primary-path.enum";
-import mime from "mime-types";
+
 @Injectable()
 export class S3Service {
   private s3: S3Client;
@@ -23,20 +24,18 @@ export class S3Service {
     @InjectLogger() private readonly logger: Logger
   ) {
     this.s3 = new S3Client({
-      endpoint: this.configService.get<string>("MINIO_ENDPOINT") || "http://172.17.0.4:9000", // MinIO endpoint
-      region: this.configService.get<string>("AWS_REGION") || "us-east-1", // MinIO region (same as AWS region)
+      endpoint: this.configService.get<string>("AWS_ENDPOINT"),
+      region: this.configService.get<string>("AWS_REGION"),
       credentials: {
-        accessKeyId: this.configService.get<string>("AWS_ACCESS_KEY") || "access_key", // Using AWS_ACCESS_KEY for MinIO
-        secretAccessKey: this.configService.get<string>("AWS_SECRET_ACCESS_KEY") || "secret_key", // Using AWS_SECRET_ACCESS_KEY for MinIO
+        accessKeyId: this.configService.get<string>("AWS_ACCESS_KEY_ID"),
+        secretAccessKey: this.configService.get<string>("AWS_SECRET_ACCESS_KEY"),
       },
-
-      forcePathStyle: true, // Use path-style URLs (required for MinIO)
+      forcePathStyle: true,
     });
   }
 
   async testConnection() {
     try {
-      console.log(this.s3);
       const result = await this.s3.send(new ListBucketsCommand({}));
       this.logger.log("MinIO Connection Successful! Buckets:", result.Buckets);
       return result.Buckets;
@@ -71,10 +70,7 @@ export class S3Service {
 
     // Generate the pre-signed URL for the file upload
     const command = new PutObjectCommand(params);
-    let url = await getSignedUrl(this.s3, command, { expiresIn });
-
-    // console.log(url.split("&").slice(0,1))
-
+    const url = await getSignedUrl(this.s3, command, { expiresIn });
     // Return the pre-signed URL and other details
     return {
       url: this.removeCredentialFromUrl(url),

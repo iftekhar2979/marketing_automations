@@ -10,4 +10,5 @@ export interface FacebookPage {
   name: string;
   id: string;
   tasks: string[];
+  link?: string;
 }

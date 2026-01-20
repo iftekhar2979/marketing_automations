@@ -1,6 +1,6 @@
 import { InjectRepository } from "@nestjs/typeorm";
 import { firstValueFrom } from "rxjs";
-import { In, Repository } from "typeorm";
+import { Repository } from "typeorm";
 
 import { HttpService } from "@nestjs/axios";
 import {
@@ -39,6 +39,13 @@ export class PageSessionService {
       return metaBusinessData;
     } catch (error) {
       throw new BadRequestException(`Failed to create profile: ${error.message}`);
+    }
+  }
+
+  async updateUserBuisnessProfile() {
+    try {
+    } catch (error) {
+      throw new BadRequestException(`Failed to update profile: ${error.message}`);
     }
   }
   async findAll(): Promise<MetaBuisnessProfiles[]> {
@@ -143,19 +150,23 @@ export class PageSessionService {
   private async fetchMetaBusinessData(): Promise<{ data: FacebookPage[] }> {
     try {
       const response = await firstValueFrom(
-        this._httpService.get(`${this.metaGraphApiUrl}/me/accounts?limit=100`, {
-          params: {
-            //   fields: "id,name,category,picture,about,website",
-            access_token: this.metaAccessToken,
-          },
-        })
+        this._httpService.get(
+          `${this.metaGraphApiUrl}/me/accounts?limit=100&fields=link,name,access_token,category,category_list`,
+          {
+            params: {
+              //   fields: "id,name,category,picture,about,website",
+              access_token: this.metaAccessToken,
+            },
+          }
+        )
       );
-
+      if (response.status === 400) {
+        throw new Error("Meta API returned a bad request ! Renew access token");
+      }
       return response.data;
     } catch (error) {
-      throw new BadRequestException(
-        `Failed to fetch Meta business data: ${error.response?.data?.error?.message || error.message}`
-      );
+      console.log(error);
+      throw error;
     }
   }
 
@@ -166,36 +177,38 @@ export class PageSessionService {
         throw new NotFoundException("No business data found from Meta");
       }
 
-      const buisness = metaBusinessData.data;
+      // const buisness = metaBusinessData.data;
 
-      const incomingBuisnesses = buisness.map((item) => {
-        if (item.id && item.name) {
-          return {
-            page_id: item.id,
-            buisness_name: item.name,
-            buisness_category: item.category || "Uncategorized",
-          };
-        }
-      });
+      // const incomingBuisnesses = buisness.map((item) => {
+      //   if (item.id && item.name) {
+      //     return {
+      //       page_id: item.id,
+      //       buisness_name: item.name,
+      //       buisness_category: item.category || "Uncategorized",
+      //     };
+      //   }
+      // });
 
-      // 1. Get existing pageIds
-      const existingPages = await this._profileRepository.find({
-        select: ["page_id"],
-        where: {
-          page_id: In(incomingBuisnesses.map((p) => p.page_id)),
-        },
-      });
-      const existingIds = new Set(existingPages.map((p) => p.page_id));
-      // 2. Filter only new pages
-      const newPages = incomingBuisnesses.filter((p) => !existingIds.has(p.page_id));
-      if (!newPages.length) {
-        return { message: "No new pages to sync", ok: true };
-      }
-      if (newPages.length) {
-        await this._profileRepository.insert(newPages);
-      }
-      return { message: "Sync completed successfully" };
-    } catch (error) {}
+      // // 1. Get existing pageIds
+      // const existingPages = await this._profileRepository.find({
+      //   select: ["page_id"],
+      //   where: {
+      //     page_id: In(incomingBuisnesses.map((p) => p.page_id)),
+      //   },
+      // });
+      // const existingIds = new Set(existingPages.map((p) => p.page_id));
+      // // 2. Filter only new pages
+      // const newPages = incomingBuisnesses.filter((p) => !existingIds.has(p.page_id));
+      // if (!newPages.length) {
+      //   return { message: "No new pages to sync", ok: true };
+      // }
+      // if (newPages.length) {
+      //   await this._profileRepository.insert(newPages);
+      // }
+      return { message: "All pages retrived successfully", data: metaBusinessData.data, ok: true };
+    } catch (error) {
+      throw new BadRequestException(`Failed to sync with Meta: ${error.message}`);
+    }
   }
 
   async validateMetaPageExists(page_id: string): Promise<{ data: PageDataMap }> {
