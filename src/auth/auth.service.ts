@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ConflictException,
   HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -28,6 +29,7 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { JwtPayload } from "./dto/jwt-payload.dto";
 import { LoginUserDto } from "./dto/login-user.dto";
 import { OtpVerificationDto } from "./dto/otp-verification.dto";
+import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { ResetPasswordDto, UpdatePassword } from "./dto/reset-password.dto";
 import { UpdateMyPasswordDto } from "./dto/update-password.dto";
 
@@ -51,7 +53,8 @@ export class AuthService {
     @InjectLogger() private readonly _logger: Logger,
     private readonly _dataSource: DataSource,
     private readonly _redisService: RedisService,
-    @InjectQueue("otp") private _otpQueue: Queue
+    @InjectQueue("otp") private _otpQueue: Queue,
+    @InjectQueue("authentication") private _authQueue: Queue
   ) {
     this._FR_HOST = _configService.get<string>(`FR_BASE_URL`);
   }
@@ -117,15 +120,24 @@ export class AuthService {
       current_refresh_token: hashedRefreshToken,
     });
   }
-  private async generateTokens(user: User) {
-    const payload = { id: user.id, email: user.email, roles: user.roles };
+  private async generateTokens(user: User, device_id?: string) {
+    const accessPayload = {
+      id: user.id,
+      type: "access", // ✅ differentiate token type
+    };
+
+    const refreshPayload = {
+      id: user.id,
+      type: "refresh", // ✅ important for verification
+      device_id, // ✅ device-based refresh
+    };
 
     const [accessToken, refreshToken] = await Promise.all([
-      this._jwtService.signAsync(payload, {
+      this._jwtService.signAsync(accessPayload, {
         secret: this._configService.get("JWT_ACCESS_SECRET"),
         expiresIn: this._configService.get("AUTH_JWT_ACCESS_TOKEN_EXPIRED"),
       }),
-      this._jwtService.signAsync(payload, {
+      this._jwtService.signAsync(refreshPayload, {
         secret: this._configService.get("JWT_REFRESH_SECRET"),
         expiresIn: this._configService.get("AUTH_JWT_REFRESH_TOKEN_EXPIRED"),
       }),
@@ -358,45 +370,56 @@ export class AuthService {
     return token;
   }
 
-  async login(loginDto: LoginUserDto) {
+  async login(loginDto: LoginUserDto, ip: string) {
     const { email, password, fcm } = loginDto;
 
-    // 1. Fetch user with password and refresh token explicitly selected
-    // Since we set 'select: false' in the entity for security
+    const attemptKey = `login:fail:${email}:${ip}`;
+
+    // 🔐 STEP 1: brute-force check
+    const attempts = await this._redisService.getLoginAttempts(attemptKey);
+    if (attempts >= 5) {
+      throw new HttpException("Too many login attempts. Try again later.", HttpStatus.TOO_MANY_REQUESTS);
+    }
+
+    // 1️⃣ Fetch user
     const user = await this._userRepository
       .createQueryBuilder("user")
       .addSelect("user.password")
       .addSelect("user.current_refresh_token")
       .where("user.email = :email", { email })
       .getOne();
+
     if (!user) {
-      // Use a generic message to prevent user enumeration attacks
+      await this._redisService.incrementLoginAttempts(attemptKey);
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    // 2. Verify Password
+    // 2️⃣ Verify password
     const isPasswordValid = await argon2verify(user.password, password);
     if (!isPasswordValid) {
+      await this._redisService.incrementLoginAttempts(attemptKey);
       throw new UnauthorizedException("Invalid credentials");
     }
 
-    // 3. Generate Token Pair
+    // ✅ SUCCESS — reset attempts
+    await this._redisService.resetLoginAttempts(attemptKey);
+
+    // 3️⃣ Tokens
     const { accessToken, refreshToken } = await this.generateTokens(user);
 
-    // 4. Hash and Update Refresh Token (Rotation)
-    // This ensures that even if the DB is stolen, active sessions are safe
+    const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
+    const REFERESH_TOKEN_CACHE_KEY = `refresh:token:${user.id}:${loginDto.device_id}`;
     const hashedRT = await argon2hash(refreshToken);
-    await this._userRepository.update(user.id, {
-      current_refresh_token: hashedRT,
-    });
+
+    this._logger.log(`Storing refresh token in Redis REFERESH== ${hashedRT}`, AuthService.name);
+    await this._redisService.getClient().set(REFERESH_TOKEN_CACHE_KEY, hashedRT, { EX: REFRESH_TOKEN_TTL });
 
     if (fcm) {
-      user.fcm = fcm;
-      await this._userRepository.update(user.id, { fcm });
+      await this._authQueue.add("fcm_store", { user, fcm });
     }
-    // 5. Return OpenAI Standard Response
+
     return {
-      status: "success",
+      ok: true,
       data: {
         id: user.id,
         first_name: user.first_name,
@@ -408,7 +431,7 @@ export class AuthService {
       },
       tokens: {
         access_token: accessToken,
-        refresh_token: refreshToken, // Plain text for the client to store
+        refresh_token: refreshToken,
       },
     };
   }
@@ -494,5 +517,65 @@ export class AuthService {
       throw new NotFoundException("User not found");
     }
     return { message: "Image uploaded successfully", status: "success", data: null };
+  }
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto) {
+    const { refresh_token, device_id } = refreshTokenDto;
+
+    // 1️⃣ Verify JWT
+    let payload: any;
+    try {
+      payload = await this._jwtService.verifyAsync(refresh_token, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+      console.log(payload);
+    } catch (err) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+
+    if (payload.type !== "refresh") {
+      throw new UnauthorizedException("Invalid token type");
+    }
+
+    const userId = payload.id;
+
+    // 2️⃣ Fetch stored hash from Redis
+    const cacheKey = `refresh:token:${userId}:${device_id}`;
+    const storedHash = await this._redisService.getClient().get(cacheKey);
+    this._logger.log(
+      `Fetched stored hash from Redis for key: ${storedHash} for ${cacheKey}`,
+      AuthService.name
+    );
+    if (!storedHash) {
+      throw new UnauthorizedException("Refresh token expired or revoked");
+    }
+
+    // 3️⃣ Compare token
+    const isValid = await argon2verify(storedHash, refresh_token);
+    if (!isValid) {
+      throw new UnauthorizedException("Refresh token mismatch");
+    }
+    // 4️⃣ Fetch user
+    const user = await this._userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    // 5️⃣ Generate new tokens
+    const { accessToken, refreshToken } = await this.generateTokens(user, device_id);
+
+    // 6️⃣ Store new refresh token in Redis
+    const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60;
+    const newHashedRT = await argon2hash(refreshToken);
+
+    await this._redisService.getClient().set(cacheKey, newHashedRT, { EX: REFRESH_TOKEN_TTL });
+
+    return {
+      ok: true,
+      tokens: {
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      },
+    };
   }
 }

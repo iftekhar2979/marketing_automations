@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { Transform } from "class-transformer";
 import {
   IsEnum,
   IsInt,
@@ -12,8 +13,7 @@ import {
   Min,
   MinLength,
 } from "class-validator";
-import { PrimaryPaths } from "../enums/primary-path.enum";
-import { Transform } from "class-transformer";
+import { PrimaryPaths, S3_Field } from "../enums/primary-path.enum";
 
 export class PreSignedUrlDTO {
   @ApiProperty({ required: true, description: "upload file name" })
@@ -30,6 +30,14 @@ export class PreSignedUrlDTO {
   @IsString()
   @IsNotEmpty()
   primaryPath: PrimaryPaths;
+
+  @ApiProperty({ required: true, description: "S3 Field Name", enum: S3_Field })
+  @IsEnum(S3_Field, {
+    message: `field must be one of the following values: ${Object.values(S3_Field).join(", ")}`,
+  })
+  @IsString()
+  @IsNotEmpty()
+  field: S3_Field;
 
   @ApiPropertyOptional({ description: "no of secs for which the s3 url should be live" })
   @Max(900, { message: "URL can be live for maximum 15 mins or 900 secs" })

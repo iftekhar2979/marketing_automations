@@ -4,13 +4,14 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   NotFoundException,
   Patch,
   Post,
   Req,
   UseGuards,
-  UseInterceptors
+  UseInterceptors,
 } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import {
@@ -42,6 +43,7 @@ import { CreateUserDto } from "./dto/create-user.dto";
 import { ForgotPasswordDto } from "./dto/forgot-password.dto";
 import { LoginUserDto } from "./dto/login-user.dto";
 import { OtpVerificationDto } from "./dto/otp-verification.dto";
+import { RefreshTokenDto } from "./dto/refresh-token.dto";
 import { ResetPasswordDto } from "./dto/reset-password.dto";
 import { UpdateMyPasswordDto } from "./dto/update-password.dto";
 import { ForgetPasswordGuard } from "./guards/forget-password.guard";
@@ -123,8 +125,9 @@ export class AuthController {
   @ApiCreatedResponse({ description: "Login successful", type: UserResponseDto })
   @ApiUnauthorizedResponse({ description: "Invalid credentials" })
   @ApiBody({ required: true, type: LoginUserDto })
-  async loginPassportLocal(@Body() loginDto: LoginUserDto, @Req() req: Request) {
-    return await this._authService.login(loginDto);
+  async loginPassportLocal(@Headers() headers: any, @Body() loginDto: LoginUserDto, @Req() req: Request) {
+    loginDto.device_id = headers["user-agent"] || "unknown_device";
+    return await this._authService.login(loginDto, req.ip);
   }
 
   @Post("resend-otp")
@@ -273,6 +276,13 @@ export class AuthController {
   @ApiBearerAuth()
   async logout() {
     return { status: "success", token: null };
+  }
+
+  @Post("refresh-token")
+  @ApiOperation({ summary: "Refresh access token using a valid refresh token" })
+  async refresh(@Body() refreshTokenDto: RefreshTokenDto, @Headers() headers: any) {
+    refreshTokenDto.device_id = headers["user-agent"];
+    return this._authService.refreshToken(refreshTokenDto);
   }
 
   /**

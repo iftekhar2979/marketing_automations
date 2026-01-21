@@ -32,6 +32,7 @@ import { FirebaseModule } from "./firebase/firebase.module";
 import { GeminiModule } from "./gemini/gemini.module";
 
 import { AgencyProfilesModule } from "./agency_profiles/agency_profiles.module";
+import { AuthQueueProcessor } from "./bull/processors/AuthenticationQueue";
 import { OtpQueueProcessor } from "./bull/processors/OtpQueue";
 import { ContructorsModule } from "./contructors/contructors.module";
 import { LeadsInfoModule } from "./leads_info/leads_info.module";
@@ -128,6 +129,7 @@ import { SocketModule } from "./socket/socket.module";
     PushNotificationProccessor,
     SeederService,
     OtpQueueProcessor,
+    AuthQueueProcessor,
     // ProductBoostgService,
   ],
 })

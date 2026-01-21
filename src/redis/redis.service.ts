@@ -86,4 +86,24 @@ export class RedisService implements OnModuleInit {
   getClient() {
     return this.client;
   }
+
+  async getLoginAttempts(key: string): Promise<number> {
+    const value = await this.client.get(key);
+    return value ? Number(value) : 0;
+  }
+
+  async incrementLoginAttempts(key: string): Promise<number> {
+    const count = await this.client.incr(key);
+
+    // Set TTL only on first failure
+    if (count === 1) {
+      await this.client.expire(key, 600); // 10 minutes
+    }
+
+    return count;
+  }
+
+  async resetLoginAttempts(key: string) {
+    await this.client.del(key);
+  }
 }

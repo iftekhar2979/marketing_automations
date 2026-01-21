@@ -1,9 +1,13 @@
-import { Controller, Delete, Get, Param, Query } from "@nestjs/common";
+import { Controller, Delete, Get, Param, Query, UseGuards } from "@nestjs/common";
 import { ApiOkResponse, ApiOperation, ApiTags } from "@nestjs/swagger";
+import { GetUser } from "src/auth/decorators/get-user.decorator";
+import { JwtAuthGuard } from "src/auth/guards/jwt-auth.guard";
+import { User } from "src/user/entities/user.entity";
 import { PreSignedUrlDTO } from "./dto/pre-signed-url.dto";
 import { S3Service } from "./s3.service";
 
 @ApiTags("S3")
+@UseGuards(JwtAuthGuard)
 // @ApiBearerAuth()
 @Controller("s3")
 //  @UseGuards(JwtAuthGuard, AccountActivatedGuard)
@@ -22,9 +26,9 @@ export class S3Controller {
       "Generates a pre-signed URL for accessing an S3 object. The URL can be used for uploading or downloading a file from S3 with a specified expiration time.",
   })
   @ApiOkResponse({ description: "Get S3 pre-signed URL" })
-  async getPreSignedUrl(@Query() preSignedUrlDto: PreSignedUrlDTO) {
-    const { fileName, primaryPath, expiresIn } = preSignedUrlDto;
-    const result = await this.s3Service.getPreSignedUrl(fileName, primaryPath, expiresIn);
+  async getPreSignedUrl(@Query() preSignedUrlDto: PreSignedUrlDTO, @GetUser() user: User) {
+    const { fileName, primaryPath, expiresIn, field } = preSignedUrlDto;
+    const result = await this.s3Service.getPreSignedUrl(fileName, primaryPath, expiresIn, field, { ...user });
     return { status: "success", data: result };
   }
 

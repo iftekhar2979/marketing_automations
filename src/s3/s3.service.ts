@@ -12,6 +12,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import mime from "mime-types";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
+import { User } from "src/user/entities/user.entity";
 import { Logger } from "winston";
 import { PrimaryPaths } from "./enums/primary-path.enum";
 
@@ -45,7 +46,13 @@ export class S3Service {
     }
   }
 
-  async getPreSignedUrl(fileName: string, primaryPath: PrimaryPaths, expiresIn: number = 300) {
+  async getPreSignedUrl(
+    fileName: string,
+    primaryPath: PrimaryPaths,
+    expiresIn: number = 300,
+    field: string,
+    user: User
+  ) {
     this.logger.log(`Generating pre-signed URL for file ${fileName}`, S3Service.name);
 
     // Get today's date in the required format
@@ -66,6 +73,11 @@ export class S3Service {
       Key: imageName,
       ContentType: contentType, // Use the proper MIME type
       ContentDisposition: "inline",
+      Metadata: {
+        user_id: user.id,
+        field: field,
+        source: "webhook",
+      },
     };
 
     // Generate the pre-signed URL for the file upload

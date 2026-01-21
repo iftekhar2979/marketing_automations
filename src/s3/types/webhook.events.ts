@@ -27,6 +27,7 @@ interface WebhookEvent {
         size: number;
         eTag: string;
         sequencer: string;
+        userMetadata: any;
       };
     };
     source: {

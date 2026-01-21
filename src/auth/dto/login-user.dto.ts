@@ -23,4 +23,9 @@ export class LoginUserDto {
   @IsOptional()
   @IsString()
   fcm?: string;
+
+  @ApiProperty({ required: true, description: "Device UUID" })
+  @IsNotEmpty()
+  @IsString()
+  device_id?: string;
 }

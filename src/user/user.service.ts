@@ -123,6 +123,10 @@ export class UserService {
 
     return this._userRepository.save(user);
   }
+
+  async updateUser(user_id: string, query: { fcm?: string }) {
+    return await this._userRepository.update(user_id, query);
+  }
   async getUserById(id: string, relations?: string[]): Promise<User> {
     const query: any = { where: { id } };
     if (relations) {
