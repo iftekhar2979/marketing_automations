@@ -19,7 +19,6 @@ import { envSchema } from "./utils/env.validation";
 // import { ElasticsearchModule } from "@nestjs/elasticsearch";
 import { SearchModule } from "./search/search.module";
 
-import { StripeModule } from "./stripe/stripe.module";
 // import { StripController } from './strip/strip.controller';
 import { CacheModule } from "@nestjs/cache-manager";
 import * as redisStore from "cache-manager-ioredis";
@@ -34,6 +33,7 @@ import { GeminiModule } from "./gemini/gemini.module";
 import { AgencyProfilesModule } from "./agency_profiles/agency_profiles.module";
 import { AuthQueueProcessor } from "./bull/processors/AuthenticationQueue";
 import { OtpQueueProcessor } from "./bull/processors/OtpQueue";
+import { UploadProcessor } from "./bull/processors/uploadQueue";
 import { ContructorsModule } from "./contructors/contructors.module";
 import { LeadsInfoModule } from "./leads_info/leads_info.module";
 import { NotificationsModule } from "./notifications/notifications.module";
@@ -41,6 +41,7 @@ import { PageSessionModule } from "./page_session/page_session.module";
 import { SeederService } from "./seeder/seeder.service";
 import { SettingsModule } from "./settings/settings.module";
 import { SocketModule } from "./socket/socket.module";
+import { WebhookModule } from "./webhook/webhook.module";
 /**
  * It is the root module for the application in we import all feature modules and configure modules and packages that are common in feature modules. Here we also configure the middlewares.
  *
@@ -105,7 +106,7 @@ import { SocketModule } from "./socket/socket.module";
     OtpModule,
     SearchModule,
     FirebaseModule,
-    StripeModule,
+    WebhookModule,
     RedisModule,
     BullModule,
     GeminiModule,
@@ -130,6 +131,7 @@ import { SocketModule } from "./socket/socket.module";
     SeederService,
     OtpQueueProcessor,
     AuthQueueProcessor,
+    UploadProcessor,
     // ProductBoostgService,
   ],
 })

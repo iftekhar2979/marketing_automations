@@ -1,24 +1,23 @@
 import { Body, Controller, Get, Headers, HttpException, HttpStatus, Post, Query } from "@nestjs/common";
-import { StripeService } from "./stripe.service";
+
 // import { ConfigService } from 'aws-sdk';
 
 import { ConfigService } from "@nestjs/config";
 import { PageSessionService } from "src/page_session/page_session.service";
 import { LeadgenWebhookPayload } from "src/page_session/types/webhook.types";
-import { RedisService } from "src/redis/redis.service";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
 import Stripe from "stripe";
 import { Logger } from "winston";
+import { WebhookService } from "./webhook.service";
 
 @Controller("webhook")
-export class StripeController {
+export class WebhookController {
   constructor(
-    private readonly _stripeService: StripeService,
+    private readonly _webhookService: WebhookService,
     private readonly _configService: ConfigService,
     private readonly _pageSessionService: PageSessionService,
-    @InjectLogger() private readonly _logger: Logger,
-    private readonly _redisService: RedisService
-    // private readonly walletService: WalletsService
+
+    @InjectLogger() private readonly _logger: Logger
   ) {}
 
   //   @Post('payment')
@@ -151,8 +150,6 @@ export class StripeController {
   @Post("minio")
   async handleMinIOWebhook(@Body() event: WebhookEvent) {
     console.log("Received MinIO webhook event");
-    // this.logger.log("Received MinIO webhook event");
-    // this.logger.debug(JSON.stringify(event, null, 2));
 
     const record = event.Records[0];
     const eventName = record.eventName;
@@ -162,59 +159,19 @@ export class StripeController {
     const eventTime = record.eventTime;
     const sourceIP = record.requestParameters.sourceIPAddress;
 
-    // this.logger.log(`Event: ${eventName}`);
-    // this.logger.log(`Bucket: ${bucketName}`);
-    // this.logger.log(`Object: ${objectKey}`);
-    // this.logger.log(`Size: ${objectSize} bytes`);
-    // this.logger.log(`Time: ${eventTime}`);
+    this._logger.log(`Time: ${eventTime} Event: ${eventName} Object: ${objectKey}`, WebhookController.name);
     this._logger.log(`USER FIELD DATA: ${JSON.stringify(record.s3.object?.userMetadata)}`, "Webhook");
     // Process based on event type
     if (eventName === "s3:ObjectCreated:Put") {
-      await this.handleFileUpload({
-        bucket: bucketName,
+      await this._webhookService.handleFileUpload(bucketName, {
         key: objectKey,
-        size: objectSize,
         field: record.s3.object?.userMetadata["x-amz-meta-field"],
         user_id: record.s3.object?.userMetadata["x-amz-meta-user_id"],
       });
     } else if (eventName === "s3:ObjectRemoved:Delete") {
-      await this.handleFileDelete(bucketName, objectKey);
+      await this._webhookService.handleFileDelete(bucketName, objectKey);
     }
 
     return { status: "received" };
-  }
-
-  private async handleFileUpload({
-    bucket,
-    key,
-    size,
-    field,
-    user_id,
-  }: {
-    field: string;
-    user_id: string;
-    bucket: string;
-    key: string;
-    size: number;
-  }) {
-    const client = this._redisService.getClient();
-    const cacheKey = `s3_upload:${user_id}`;
-
-    // Store latest file per field
-    await client.hSet(cacheKey, {
-      [field]: key,
-      user_id,
-    });
-
-    // Reset TTL so all fields expire together
-    await client.expire(cacheKey, 3600);
-
-    this._logger.log(`File uploaded: ${bucket}/${key} (${size} bytes)`, "Webhook");
-  }
-
-  private async handleFileDelete(bucket: string, key: string) {
-    // this.logger.log(`File deleted: ${bucket}/${key}`);
-    console.log(`File deleted: ${bucket}/${key}`);
-    // Add your custom logic here
   }
 }

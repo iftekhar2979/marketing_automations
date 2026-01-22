@@ -1,5 +1,5 @@
 import { Test, TestingModule } from "@nestjs/testing";
-import { StripeService } from "./stripe.service";
+import { StripeService } from "./webhook.service";
 
 describe("StripeService", () => {
   let service: StripeService;

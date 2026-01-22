@@ -1,9 +1,10 @@
+import { BullModule } from "@nestjs/bull";
 import { Module } from "@nestjs/common";
 import { AuthModule } from "src/auth/auth.module";
 import { PageSessionModule } from "src/page_session/page_session.module";
 import { UserModule } from "src/user/user.module";
-import { StripeController } from "./stripe.controller";
-import { StripeService } from "./stripe.service";
+import { WebhookController } from "./webhook.controller";
+import { WebhookService } from "./webhook.service";
 
 // @Global()
 @Module({
@@ -12,10 +13,11 @@ import { StripeService } from "./stripe.service";
     UserModule,
     AuthModule,
     PageSessionModule,
+    BullModule.registerQueue({ name: "uploadQueue" }),
     // WalletsModule
   ],
-  controllers: [StripeController],
-  providers: [StripeService],
-  exports: [StripeService],
+  controllers: [WebhookController],
+  providers: [WebhookService],
+  exports: [WebhookService],
 })
-export class StripeModule {}
+export class WebhookModule {}

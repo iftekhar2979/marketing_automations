@@ -53,6 +53,7 @@ async function bootstrap() {
   );
   const seederService = app.get(SeederService);
   await seederService.seedAdminUser();
+  // await seederService.seedFakeUsers();
   app.setGlobalPrefix("/api");
 
   app.enableVersioning({

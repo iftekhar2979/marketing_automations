@@ -14,6 +14,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Queue } from "bull";
+import { createHash } from "crypto";
 import { Request } from "express";
 import { OtpType } from "src/otp/entities/otp.entity";
 import { OtpService } from "src/otp/otp.service";
@@ -385,7 +386,6 @@ export class AuthService {
     const user = await this._userRepository
       .createQueryBuilder("user")
       .addSelect("user.password")
-      .addSelect("user.current_refresh_token")
       .where("user.email = :email", { email })
       .getOne();
 
@@ -409,8 +409,8 @@ export class AuthService {
 
     const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60; // 7 days in seconds
     const REFERESH_TOKEN_CACHE_KEY = `refresh:token:${user.id}:${loginDto.device_id}`;
-    const hashedRT = await argon2hash(refreshToken);
-
+    // const hashedRT = await argon2hash(refreshToken);
+    const hashedRT = createHash("sha256").update(refreshToken).digest("hex");
     this._logger.log(`Storing refresh token in Redis REFERESH== ${hashedRT}`, AuthService.name);
     await this._redisService.getClient().set(REFERESH_TOKEN_CACHE_KEY, hashedRT, { EX: REFRESH_TOKEN_TTL });
 
@@ -549,9 +549,13 @@ export class AuthService {
     if (!storedHash) {
       throw new UnauthorizedException("Refresh token expired or revoked");
     }
-
-    // 3️⃣ Compare token
-    const isValid = await argon2verify(storedHash, refresh_token);
+    // 1. Hash the incoming token provided by the user
+    const incomingHash = createHash("sha256").update(refresh_token).digest("hex");
+    console.log(incomingHash, storedHash);
+    // 2. Perform a direct string comparison
+    // Note: It is best practice to use timingSafeEqual for security,
+    // though for hashed refresh tokens, a direct comparison is common.
+    const isValid = incomingHash === storedHash;
     if (!isValid) {
       throw new UnauthorizedException("Refresh token mismatch");
     }
@@ -562,19 +566,20 @@ export class AuthService {
     }
 
     // 5️⃣ Generate new tokens
-    const { accessToken, refreshToken } = await this.generateTokens(user, device_id);
+    const { accessToken, refreshToken: newRefreshToken } = await this.generateTokens(user, device_id);
 
-    // 6️⃣ Store new refresh token in Redis
+    // 6️⃣ Store NEW refresh token in Redis
     const REFRESH_TOKEN_TTL = 7 * 24 * 60 * 60;
-    const newHashedRT = await argon2hash(refreshToken);
+
+    // FIX: Hash 'newRefreshToken', NOT the old 'refresh_token' from the DTO
+    const newHashedRT = createHash("sha256").update(newRefreshToken).digest("hex");
 
     await this._redisService.getClient().set(cacheKey, newHashedRT, { EX: REFRESH_TOKEN_TTL });
-
     return {
       ok: true,
       tokens: {
         access_token: accessToken,
-        refresh_token: refreshToken,
+        refresh_token: newRefreshToken,
       },
     };
   }

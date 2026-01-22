@@ -10,5 +10,6 @@ import { AgencyProfile } from "./entities/agency_profiles.entity";
   imports: [TypeOrmModule.forFeature([AgencyProfile]), AuthModule, UserModule],
   controllers: [AgencyProfilesController],
   providers: [AgencyProfilesService],
+  exports: [AgencyProfilesService],
 })
 export class AgencyProfilesModule {}

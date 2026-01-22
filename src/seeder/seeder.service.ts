@@ -1,13 +1,17 @@
 // src/user/user.service.ts
 import { Injectable } from "@nestjs/common";
 import { CreateAdminDto } from "src/auth/dto/create-user.dto";
+import { AccountStatus } from "src/user/dto/verification-dto";
 import { UserRoles } from "src/user/enums/role.enum";
 import { UserService } from "src/user/user.service";
+import { argon2hash } from "src/utils/hashes/argon2";
+import { DataSource } from "typeorm";
 
 @Injectable()
 export class SeederService {
   constructor(
-    private readonly _userService: UserService
+    private readonly _userService: UserService,
+    private readonly _dataSource: DataSource
     // private readonly settingService: SettingsService,
     // @InjectRepository(Setting) private _settingModel: Repository<Setting>
   ) {}
@@ -31,6 +35,66 @@ export class SeederService {
       console.log("Admin user created successfully!");
     } else {
       console.log("Admin user already exists.");
+    }
+  }
+
+  async seedFakeUsers() {
+    const queryRunner = this._dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    const TOTAL_USERS = 20;
+    const SHARED_PASSWORD = "Password123!"; // Meets your DTO requirements
+
+    try {
+      // this.logger.log(`Starting seed: Generating ${TOTAL_USERS} users...`);
+
+      const hashedPassword = await argon2hash(SHARED_PASSWORD);
+
+      for (let i = 1; i <= TOTAL_USERS; i++) {
+        const firstName = `Fake`;
+        const lastName = `User${i}`;
+        const email = `testuser${i}@harscrape.com`;
+        const phone = `123456789${i.toString().padStart(2, "0")}`;
+
+        // 1. Insert User
+        const userResult = await queryRunner.manager
+          .createQueryBuilder()
+          .insert()
+          .into("users") // Ensure this matches your table name
+          .values({
+            first_name: firstName,
+            last_name: lastName,
+            email: email,
+            phone: phone,
+            password: hashedPassword,
+            status: AccountStatus.INACTIVE, // Defaulting to inactive
+            roles: ["user"], // Default role
+          })
+          .returning("id")
+          .execute();
+
+        const userId = userResult.raw[0].id;
+
+        // 2. Create Verification Record
+        await queryRunner.manager.insert("verifications", {
+          user_id: userId,
+          status: AccountStatus.INACTIVE,
+        });
+
+        // this.logger.debug(`Created: ${email}`);
+      }
+
+      await queryRunner.commitTransaction();
+      // this.logger.log('Seed completed successfully.');
+
+      return { message: `${TOTAL_USERS} users created with password: ${SHARED_PASSWORD}` };
+    } catch (err) {
+      // this.logger.error('Seed failed, rolling back...');
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
     }
   }
   async seedSettings() {

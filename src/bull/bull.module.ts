@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ConfigModule, ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { TypeOrmModule } from "@nestjs/typeorm";
+import { AgencyProfilesModule } from "src/agency_profiles/agency_profiles.module";
 import { FirebaseModule } from "src/firebase/firebase.module";
 import { MailModule } from "src/mail/mail.module";
 import { NotificationsModule } from "src/notifications/notifications.module";
@@ -22,6 +23,8 @@ import { AuthQueueProcessor } from "./processors/AuthenticationQueue";
     NotificationsModule,
     UserModule,
     OtpModule,
+    UserModule,
+    AgencyProfilesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

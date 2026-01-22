@@ -8,6 +8,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -36,6 +37,8 @@ export class User {
   last_name: string;
   @Column({ unique: true, length: 100 })
   @ApiProperty()
+  @Index()
+  @Column({ unique: true })
   email: string;
   @Column({ type: "varchar", nullable: true })
   @ApiProperty()
