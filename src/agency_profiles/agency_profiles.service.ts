@@ -1,5 +1,6 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
+import { RedisService } from "src/redis/redis.service";
 import { User } from "src/user/entities/user.entity";
 import { Repository } from "typeorm";
 import { UpdateAgencyProfileDto } from "./dtos/update_agency.dto";
@@ -9,7 +10,8 @@ import { AgencyProfile } from "./entities/agency_profiles.entity";
 export class AgencyProfilesService {
   constructor(
     @InjectRepository(AgencyProfile)
-    private readonly _agencyProfileRepo: Repository<AgencyProfile>
+    private readonly _agencyProfileRepo: Repository<AgencyProfile>,
+    private readonly _redisService: RedisService
   ) {}
 
   async updateMyAgencyProfile(
@@ -25,6 +27,35 @@ export class AgencyProfilesService {
       message: "Agency Information updated successfully",
       data,
     };
+  }
+
+  async getAgencyByUserId(userId: string, relations: string[] = ["agency_owner"]): Promise<AgencyProfile> {
+    const client = this._redisService.getClient();
+
+    // 1. Generate a consistent cache key
+    const relationKey = relations.sort().join(",");
+    const cacheKey = `agency:owner:${userId}:${relationKey}`;
+
+    // 2. Check Redis Cache
+    const cachedData = await client.get(cacheKey);
+    if (cachedData) {
+      return JSON.parse(cachedData);
+    }
+
+    // 3. Database Query
+    const agency = await this._agencyProfileRepo.findOne({
+      where: { agency_owner_id: userId },
+      relations: relations,
+    });
+
+    if (!agency) {
+      throw new NotFoundException("Agency profile not found");
+    }
+
+    // 4. Store in Redis (TTL 1 Hour)
+    await client.set(cacheKey, JSON.stringify(agency), { EX: 3600 });
+
+    return agency;
   }
 
   async updatePictures(user: User, dto) {

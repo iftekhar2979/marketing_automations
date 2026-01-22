@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { CreateAdminDto } from "src/auth/dto/create-user.dto";
+import { RedisService } from "src/redis/redis.service";
 import { pagination } from "src/shared/utils/pagination";
 import { argon2hash } from "src/utils/hashes/argon2";
 import { DataSource, Repository } from "typeorm";
@@ -22,6 +23,7 @@ export class UserService {
     @InjectRepository(User) private _userRepository: Repository<User>,
     @InjectRepository(Verification) private _verificationRepo: Repository<Verification>,
     @InjectLogger() private readonly _logger: Logger,
+    private readonly _redisService: RedisService,
     private readonly _mailService: MailService,
     private _dataSource: DataSource
   ) {}
@@ -128,12 +130,30 @@ export class UserService {
     return await this._userRepository.update(user_id, query);
   }
   async getUserById(id: string, relations?: string[]): Promise<User> {
+    const client = this._redisService.getClient();
+    const relationKey = relations ? relations.sort().join(",") : "no-relations"; // .sort() ensures key consistency
+    const cacheKey = `user:${id}:${relationKey}`;
+
+    // 1. Try to get from Redis
+    const cachedUser = await client.get(cacheKey);
+    if (cachedUser) {
+      return JSON.parse(cachedUser); // Deserialize string to Object
+    }
+
+    // 2. If not in cache, query the DB
     const query: any = { where: { id } };
     if (relations) {
       query.relations = relations;
     }
-    query.cache = 6000 * 100;
+
     const user = await this._userRepository.findOne(query);
+
+    // 3. Save to Redis
+    if (user) {
+      // Serialize Object to string
+      await client.set(cacheKey, JSON.stringify(user), { EX: 3600 });
+    }
+
     return user;
   }
   async getUser(id: string) {

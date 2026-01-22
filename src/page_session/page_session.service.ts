@@ -1,8 +1,9 @@
 import { InjectRepository } from "@nestjs/typeorm";
 import { firstValueFrom } from "rxjs";
-import { Repository } from "typeorm";
+import { DataSource, Repository } from "typeorm";
 
 import { HttpService } from "@nestjs/axios";
+import { InjectQueue } from "@nestjs/bull";
 import {
   BadRequestException,
   Injectable,
@@ -10,12 +11,17 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { Queue } from "bull";
+import { AgencyProfilesService } from "src/agency_profiles/agency_profiles.service";
+import { AgencyProfile } from "src/agency_profiles/entities/agency_profiles.entity";
+import { RedisService } from "src/redis/redis.service";
+import { User } from "src/user/entities/user.entity";
+import { UserService } from "src/user/user.service";
 import { UpdateMetaBusinessProfileDto } from "./dto/update_meta_buisness_profile.dto";
 import { MetaBuisnessProfiles } from "./entites/meta_buisness.entity";
 import { FacebookPage } from "./types/buisness.types";
 import { LeadgenLead } from "./types/leadgen.types";
 import { PageDataMap } from "./types/page_info.types";
-
 @Injectable()
 export class PageSessionService {
   private metaGraphApiUrl = "https://graph.facebook.com/v24.0";
@@ -25,7 +31,12 @@ export class PageSessionService {
     @InjectRepository(MetaBuisnessProfiles)
     private readonly _profileRepository: Repository<MetaBuisnessProfiles>,
     private readonly _configService: ConfigService,
-    private readonly _httpService: HttpService
+    private readonly _httpService: HttpService,
+    private readonly _userService: UserService,
+    private readonly _dataSource: DataSource,
+    private readonly _agencyProfileService: AgencyProfilesService,
+    private readonly _redisService: RedisService,
+    @InjectQueue("global") private readonly _globalQueueService: Queue
   ) {
     this.metaAccessToken = this._configService.get<string>("META_ACCESS_TOKEN");
     if (!this.metaAccessToken) {
@@ -94,6 +105,74 @@ export class PageSessionService {
     }
   }
 
+  async connectFacebookPage({ page_id, user_id }: { page_id: string; user_id: string }) {
+    // 1. Start the QueryRunner
+    const queryRunner = this._dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 2. Fetch user INSIDE transaction to ensure it's not deleted mid-process
+      const user = await queryRunner.manager.findOne(User, {
+        where: { id: user_id },
+        relations: ["buisness_profiles"],
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${user_id} not found`);
+      }
+      if (user.buisness_profiles) {
+        throw new BadRequestException(`User with ID ${user_id} already has a business profile`);
+      }
+
+      // 3. Validate Meta Data
+      const metaData = await this.validateMetaPageExists(page_id);
+      const pageInfo = metaData.data?.[page_id];
+
+      if (!pageInfo) {
+        throw new NotFoundException(`Meta page with ID ${page_id} not found in Meta response`);
+      }
+
+      // 4. Create Business Profile
+      const newProfile = queryRunner.manager.create(MetaBuisnessProfiles, {
+        page_id: pageInfo.id,
+        buisness_name: pageInfo.name,
+        buisness_category: pageInfo.category || "Uncategorized",
+        users: user, // Link to user
+      });
+
+      const savedProfile = await queryRunner.manager.save(newProfile);
+
+      // 5. Update Agency Profile link
+      await queryRunner.manager.update(
+        AgencyProfile,
+        { agency_owner_id: user.id },
+        { buisness_profile: savedProfile }
+      );
+
+      user.buisness_profiles = savedProfile;
+      await queryRunner.manager.save(user);
+
+      // 6. Commit DB changes
+      await queryRunner.commitTransaction();
+
+      // 7. CLEAR REDIS CACHE (Critical for Efficiency)
+      await this._globalQueueService.add("invalidate-user-cache", { user_id: user.id });
+
+      return {
+        ok: true,
+        message: "Business configured successfully",
+        data: savedProfile,
+      };
+    } catch (error) {
+      // Rollback and then THROW so the user gets the error message
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(`Failed to connect Facebook page: ${error.message}`);
+    } finally {
+      // Always release the connection
+      await queryRunner.release();
+    }
+  }
   //   async findByUserId(userId: string): Promise<metaBuisnessProfiles[]> {
   //     try {
   //       return await this._profileRepository.find({

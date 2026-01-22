@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -19,6 +20,7 @@ export class MetaBuisnessProfiles {
   id: number;
 
   @ApiProperty({ example: "page_id", description: "Page Id" })
+  @Index()
   @Column({ type: "varchar" })
   page_id: string;
 

@@ -9,6 +9,3 @@ export interface AgencyUpdateData {
   driving_license_back?: string;
   [key: string]: string | undefined;
 }
-
-// Usage in your function:
-const pushData: AgencyUpdateData = {};
