@@ -33,6 +33,7 @@ import { GeminiModule } from "./gemini/gemini.module";
 import { AgencyProfilesModule } from "./agency_profiles/agency_profiles.module";
 import { AuthQueueProcessor } from "./bull/processors/AuthenticationQueue";
 import { GlobalQueueProcessor } from "./bull/processors/globalQueue";
+import { LeadsQueueProcessor } from "./bull/processors/leadsQueue";
 import { OtpQueueProcessor } from "./bull/processors/OtpQueue";
 import { UploadProcessor } from "./bull/processors/uploadQueue";
 import { ContructorsModule } from "./contructors/contructors.module";
@@ -134,6 +135,7 @@ import { WebhookModule } from "./webhook/webhook.module";
     AuthQueueProcessor,
     UploadProcessor,
     GlobalQueueProcessor,
+    LeadsQueueProcessor,
     // ProductBoostgService,
   ],
 })

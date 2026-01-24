@@ -13,7 +13,7 @@ import { WebhookService } from "./webhook.service";
     UserModule,
     AuthModule,
     PageSessionModule,
-    BullModule.registerQueue({ name: "uploadQueue" }),
+    BullModule.registerQueue({ name: "uploadQueue" }, { name: "leads" }),
     // WalletsModule
   ],
   controllers: [WebhookController],

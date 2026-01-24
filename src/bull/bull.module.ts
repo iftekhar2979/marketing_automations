@@ -4,6 +4,7 @@ import { JwtModule } from "@nestjs/jwt";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AgencyProfilesModule } from "src/agency_profiles/agency_profiles.module";
 import { FirebaseModule } from "src/firebase/firebase.module";
+import { LeadsInfoModule } from "src/leads_info/leads_info.module";
 import { MailModule } from "src/mail/mail.module";
 import { NotificationsModule } from "src/notifications/notifications.module";
 import { OtpModule } from "src/otp/otp.module";
@@ -24,6 +25,7 @@ import { AuthQueueProcessor } from "./processors/AuthenticationQueue";
     UserModule,
     OtpModule,
     UserModule,
+    LeadsInfoModule,
     AgencyProfilesModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],

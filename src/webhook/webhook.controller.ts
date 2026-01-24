@@ -116,6 +116,7 @@ export class WebhookController {
               break;
             }
             const page_id = entry.changes[0].value.page_id;
+            const form_id = entry.changes[0].value.form_id;
             if (!page_id) {
               console.log("Page ID not found in the webhook payload.");
             }
@@ -130,14 +131,19 @@ export class WebhookController {
               // break;
             }
             const lead_id = change.value.leadgen_id;
+
             const validate_lead = await this._pageSessionService.leadInformations({
               access_token: validate_page.data[page_id].access_token,
               lead_id,
             });
-            // console.log("New lead ID:", lead_id);
-            console.log(validate_lead);
-            // TODO: Fetch full lead details using Graph API
-            // this.fetchLeadDetails(leadId);
+            await this._webhookService.handleMetaWebhhook({
+              page_id,
+              lead_id,
+              form_id,
+              leadInfo: validate_lead.data,
+              field_data: validate_lead.data.field_data,
+            });
+            console.log("New lead ID:", validate_lead.data);
           }
         }
       }

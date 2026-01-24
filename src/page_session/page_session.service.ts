@@ -53,6 +53,15 @@ export class PageSessionService {
     }
   }
 
+  async getBuisness() {
+    try {
+      const metaBusinessData = await this.fetchMetaBusinessData();
+      return metaBusinessData;
+    } catch (error) {
+      throw new BadRequestException(`Failed to create profile: ${error.message}`);
+    }
+  }
+
   async updateUserBuisnessProfile() {
     try {
     } catch (error) {
@@ -89,14 +98,28 @@ export class PageSessionService {
   }
 
   async findByPageId(pageId: string): Promise<MetaBuisnessProfiles> {
+    const client = this._redisService.getClient();
+    const cacheKey = `meta_profile:page:${pageId}`;
+
     try {
+      // 1️⃣ Check cache
+      const cached = await client.get(cacheKey);
+      if (cached) {
+        return JSON.parse(cached) as MetaBuisnessProfiles;
+      }
+
+      // 2️⃣ Fetch from DB
       const profile = await this._profileRepository.findOne({
         where: { page_id: pageId },
+        relations: ["users"],
       });
 
       if (!profile) {
         throw new NotFoundException(`Profile with page ID ${pageId} not found`);
       }
+
+      // 3️⃣ Cache result (TTL 10 minutes)
+      await client.set(cacheKey, JSON.stringify(profile), { EX: 600 });
 
       return profile;
     } catch (error) {
@@ -173,18 +196,6 @@ export class PageSessionService {
       await queryRunner.release();
     }
   }
-  //   async findByUserId(userId: string): Promise<metaBuisnessProfiles[]> {
-  //     try {
-  //       return await this._profileRepository.find({
-  //         where: { user_id: userId },
-  //         order: {
-  //           created_at: "DESC",
-  //         },
-  //       });
-  //     } catch (error) {
-  //       throw new InternalServerErrorException("Failed to fetch user profiles");
-  //     }
-  //   }
 
   async update(id: number, updateProfileDto: UpdateMetaBusinessProfileDto): Promise<MetaBuisnessProfiles> {
     try {
@@ -212,19 +223,6 @@ export class PageSessionService {
       throw new InternalServerErrorException("Failed to delete profile");
     }
   }
-
-  //   async syncWithMeta(id: number): Promise<metaBuisnessProfiles> {
-  //     try {
-  //       const profile = await this.findOne(id);
-  //       const metaData = await this.fetchMetaBusinessData(profile.page_id);
-
-  //       profile.buisness_name = metaData.name;
-  //       return await this._profileRepository.save(profile);
-  //     } catch (error) {
-  //       if (error instanceof NotFoundException) throw error;
-  //       throw new InternalServerErrorException(`Failed to sync with Meta: ${error.message}`);
-  //     }
-  //   }
 
   private async fetchMetaBusinessData(): Promise<{ data: FacebookPage[] }> {
     try {
@@ -312,7 +310,7 @@ export class PageSessionService {
   }: {
     lead_id: string;
     access_token: string;
-  }): Promise<LeadgenLead | any> {
+  }): Promise<{ data: LeadgenLead }> {
     try {
       return await firstValueFrom(
         this._httpService.get(`${this.metaGraphApiUrl}/${lead_id}`, {

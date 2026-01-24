@@ -7,9 +7,12 @@ import { S3_Field } from "src/s3/enums/primary-path.enum";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
 import { User } from "src/user/entities/user.entity";
 
+import { Field, LeadgenLead } from "src/page_session/types/leadgen.types";
+import { UserService } from "src/user/user.service";
 import Stripe from "stripe";
 import { Logger } from "winston";
 import { AgencyUpdateData } from "./types/aws_webhook";
+import { parseLeadInfo } from "./utils/leadsProfile";
 
 @Injectable()
 export class WebhookService {
@@ -20,7 +23,9 @@ export class WebhookService {
     private _configService: ConfigService,
     @InjectLogger() private readonly _logger: Logger,
     private readonly _redisService: RedisService,
-    @InjectQueue("uploadQueue") private readonly _uploadQueue: Queue
+    @InjectQueue("uploadQueue") private readonly _uploadQueue: Queue,
+    @InjectQueue("leads") private readonly _leadQueue: Queue,
+    private readonly _userService: UserService
     // private readonly subscriptionService: SubscriptionService,
   ) {
     this.stripe = new Stripe(this._configService.get<string>("STRIPE_SECRET_KEY"), {
@@ -155,10 +160,34 @@ export class WebhookService {
       );
     }
   }
+  async handleMetaWebhhook({
+    page_id,
+    lead_id,
+    form_id,
+    leadInfo,
+    field_data,
+  }: {
+    page_id: string;
+    lead_id: string;
+    form_id: string;
+    leadInfo: LeadgenLead;
+    field_data: Field[];
+  }) {
+    const destructedLeadsInfo = parseLeadInfo(leadInfo);
+    await this._leadQueue.add("seed", {
+      page_id,
+      lead_id,
+      form_id,
+      destructedLeadsInfo,
+      field_data,
+    });
+    // console.log("LEADS INFORMATION", destructedLeadsInfo);
+  }
 
   async handleFileDelete(bucket: string, key: string) {
     // this.logger.log(`File deleted: ${bucket}/${key}`);
     console.log(`File deleted: ${bucket}/${key}`);
     // Add your custom logic here
   }
+  async seedLeads() {}
 }

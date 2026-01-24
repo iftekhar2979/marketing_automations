@@ -4,6 +4,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -11,17 +12,21 @@ import {
 import { LeadStatus } from "../enums/lead_status.enum";
 
 @Entity({ name: "leads" })
+@Index(["status", "is_used"]) // composite index
 export class Lead {
   @PrimaryGeneratedColumn("uuid")
   id: string;
 
   @Column({ name: "meta_lead_id", type: "varchar", nullable: true })
+  @Index()
   meta_lead_id: string;
 
   @Column({ name: "agency_id", type: "uuid", nullable: true })
+  @Index()
   agency_id: string;
 
   @Column({ name: "contructor_id", type: "uuid", nullable: true })
+  @Index()
   contructor_id: string;
 
   @Column({
@@ -46,8 +51,8 @@ export class Lead {
   @Column({ name: "form_id", type: "varchar", nullable: true })
   form_id: string;
 
-  @Column({ name: "form_info", type: "varchar", nullable: true })
-  form_info: string;
+  @Column({ name: "form_info", type: "json", nullable: true })
+  form_info: any; // store JSON payload from webhook
 
   @Column({
     name: "start_time_preference",
