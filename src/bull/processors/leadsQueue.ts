@@ -1,6 +1,7 @@
 import { Process, Processor } from "@nestjs/bull";
 import { Job } from "bull";
 import { AgencyProfilesService } from "src/agency_profiles/agency_profiles.service";
+import { ChatbotService } from "src/chatbot/chatbot.service";
 import { LeadsInfoService } from "src/leads_info/leads_info.service";
 import { PageSessionService } from "src/page_session/page_session.service";
 import { Field, LeadProfile } from "src/page_session/types/leadgen.types";
@@ -14,7 +15,8 @@ export class LeadsQueueProcessor {
     private readonly _agencyService: AgencyProfilesService,
     private readonly _userService: UserService,
     private readonly _metaBuisnesService: PageSessionService,
-    private readonly _leadsService: LeadsInfoService
+    private readonly _leadsService: LeadsInfoService,
+    private readonly _chatbotService: ChatbotService
   ) {}
   @Process("seed")
   async seedLead(
@@ -33,7 +35,8 @@ export class LeadsQueueProcessor {
     console.log("Distruction Issue=2");
     const pageInfo = await this._metaBuisnesService.findByPageId(page_id);
     console.log("Page Information", pageInfo);
-    await this._leadsService.createLead({
+    const leadsField = JSON.stringify(field_data);
+    const lead = await this._leadsService.createLead({
       page_id,
       meta_lead_id: lead_id,
       form_id,
@@ -41,7 +44,19 @@ export class LeadsQueueProcessor {
       name,
       user: pageInfo.users[0],
       phone,
-      form_info: JSON.stringify(field_data),
+      form_info: leadsField,
     });
+    console.log("Message Processsing");
+    const result = await this._chatbotService.chat(
+      lead_id,
+      `Hi My Information is`,
+      {
+        formId: form_id,
+        fields: field_data,
+        formName: "Lead Information",
+      },
+      pageInfo.users
+    );
+    console.log(result);
   }
 }

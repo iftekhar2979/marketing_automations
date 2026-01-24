@@ -36,7 +36,9 @@ import { GlobalQueueProcessor } from "./bull/processors/globalQueue";
 import { LeadsQueueProcessor } from "./bull/processors/leadsQueue";
 import { OtpQueueProcessor } from "./bull/processors/OtpQueue";
 import { UploadProcessor } from "./bull/processors/uploadQueue";
+import { ChatbotModule } from "./chatbot/chatbot.module";
 import { ContructorsModule } from "./contructors/contructors.module";
+import { LangChainOpenAiModule } from "./lang-chain-open-ai/lang-chain-open-ai.module";
 import { LeadsInfoModule } from "./leads_info/leads_info.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { PageSessionModule } from "./page_session/page_session.module";
@@ -119,6 +121,8 @@ import { WebhookModule } from "./webhook/webhook.module";
     LeadsInfoModule,
     AgencyProfilesModule,
     ContructorsModule,
+    ChatbotModule,
+    LangChainOpenAiModule,
   ],
   controllers: [AppController],
   providers: [

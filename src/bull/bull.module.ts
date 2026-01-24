@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AgencyProfilesModule } from "src/agency_profiles/agency_profiles.module";
+import { ChatbotModule } from "src/chatbot/chatbot.module";
 import { FirebaseModule } from "src/firebase/firebase.module";
 import { LeadsInfoModule } from "src/leads_info/leads_info.module";
 import { MailModule } from "src/mail/mail.module";
@@ -39,6 +40,7 @@ import { AuthQueueProcessor } from "./processors/AuthenticationQueue";
         };
       },
     }),
+    ChatbotModule,
   ],
   providers: [BullService, AuthQueueProcessor],
   controllers: [BullController],

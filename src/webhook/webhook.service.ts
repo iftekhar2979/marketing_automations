@@ -181,7 +181,7 @@ export class WebhookService {
       destructedLeadsInfo,
       field_data,
     });
-    // console.log("LEADS INFORMATION", destructedLeadsInfo);
+    console.log("LEADS INFORMATION", destructedLeadsInfo);
   }
 
   async handleFileDelete(bucket: string, key: string) {
