@@ -47,16 +47,16 @@ export class LeadsQueueProcessor {
       form_info: leadsField,
     });
     console.log("Message Processsing");
-    const result = await this._chatbotService.chat(
-      lead_id,
-      `Hi My Information is`,
-      {
-        formId: form_id,
-        fields: field_data,
-        formName: "Lead Information",
-      },
-      pageInfo.users
-    );
-    console.log(result);
+    // const result = await this._chatbotService.chat(
+    //   lead_id,
+    //   `Hi My Information is`,
+    //   {
+    //     formId: form_id,
+    //     fields: field_data,
+    //     formName: "Lead Information",
+    //   },
+    //   pageInfo.users
+    // );
+    // console.log(result);
   }
 }

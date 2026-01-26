@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { ClientContext, DynamicFormData, UserInfo } from "../types/chatbot.types";
+import { User } from "src/user/entities/user.entity";
+import { ClientContext, RawMessageClientContext } from "../types/chatbot.types";
 import { ConversationMemoryService } from "./chat-conversation.service";
 
 @Injectable()
@@ -8,8 +9,8 @@ export class ConversationStateService {
 
   async initializeContext(
     clientId: string,
-    formData: DynamicFormData,
-    userInfo: UserInfo,
+    formData: { name: string; values: string[] }[],
+    userInfo: User,
     sourceChannel: string = "website"
   ): Promise<ClientContext> {
     const context: ClientContext = {
@@ -29,6 +30,23 @@ export class ConversationStateService {
     await this.memoryService.saveClientContext(clientId, context);
     return context;
   }
+  async initiateRawContext(clientId: string, userInfo: User): Promise<RawMessageClientContext> {
+    const context: RawMessageClientContext = {
+      id: clientId,
+      userInfo,
+      conversationHistory: [],
+      status: "information_gathering",
+      collectedData: new Map(),
+      metadata: {
+        startedAt: new Date(),
+        lastActivityAt: new Date(),
+        sourceChannel: "message",
+      },
+    };
+
+    await this.memoryService.saveRawClient(clientId, context);
+    return context;
+  }
 
   async updateContext(clientId: string, updates: Partial<ClientContext>): Promise<ClientContext> {
     const context = await this.memoryService.getClientContext(clientId);
@@ -42,7 +60,7 @@ export class ConversationStateService {
   }
 
   async determineNextStatus(context: ClientContext): Promise<ClientContext["status"]> {
-    const requiredFields = context.formData.fields.filter((f) => f.name);
+    const requiredFields = context.formData.filter((f) => f.name);
     const collectedCount = requiredFields.filter((f) => context.collectedData.has(f.name)).length;
     const collectionProgress = collectedCount / requiredFields.length;
 
@@ -57,7 +75,7 @@ export class ConversationStateService {
     collected: number;
     remaining: string[];
   } {
-    const requiredFields = context.formData.fields.filter((f) => f.name);
+    const requiredFields = context.formData.filter((f) => f.name);
     const collected = requiredFields.filter((f) => context.collectedData.has(f.name)).length;
     const remaining = requiredFields.filter((f) => !context.collectedData.has(f.name)).map((f) => f.name);
 

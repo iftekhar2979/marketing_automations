@@ -4,12 +4,13 @@ import { CACHE_MANAGER } from "@nestjs/cache-manager";
 import { Inject, Injectable, OnModuleInit } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Cache } from "cache-manager";
-import { createClient, RedisClientType } from "redis";
+import { createClient } from "redis";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
 import { Logger } from "winston";
+
+export type RedisClient = ReturnType<typeof createClient>;
 @Injectable()
 export class RedisService implements OnModuleInit {
-  private redis: RedisClientType;
   private client = createClient({
     socket: {
       host: this._configService.get<string>("REDIS_HOST"),
@@ -23,12 +24,12 @@ export class RedisService implements OnModuleInit {
     @Inject(CACHE_MANAGER) private _cacheManager: Cache, // Inject CacheManager
     @InjectLogger() private readonly _logger: Logger,
     private readonly _configService: ConfigService
-  ) {
-    this.client.connect().catch(console.error);
-  }
+  ) {}
   async onModuleInit() {
+    console.log("Redis are Connecting...");
     if (!this.client.isOpen) {
       await this.client.connect();
+      console.log("Redis are Connected Successfully...");
     }
 
     // this.redis.monitor((err, monitor) => {
@@ -83,7 +84,7 @@ export class RedisService implements OnModuleInit {
     }
   }
 
-  getClient() {
+  getClient(): RedisClient {
     return this.client;
   }
 

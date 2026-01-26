@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { RedisService } from "src/redis/redis.service";
-import { ClientContext, Message } from "../types/chatbot.types";
+import { ClientContext, Message, RawMessageClientContext } from "../types/chatbot.types";
 
 @Injectable()
 export class ConversationMemoryService {
@@ -11,6 +11,7 @@ export class ConversationMemoryService {
     private readonly _redisService: RedisService
   ) {}
   async onModuleInit() {
+    console.log("Conversation Memory Service");
     this.redis = await this._redisService.getClient();
   }
 
@@ -37,6 +38,21 @@ export class ConversationMemoryService {
   }
 
   async saveClientContext(clientId: string, context: ClientContext): Promise<void> {
+    try {
+      const key = `context:${clientId}`;
+      const serialized = JSON.stringify(context, (k, v) => {
+        if (v instanceof Map) return Object.fromEntries(v);
+        if (v instanceof Date) return v.toISOString();
+        return v;
+      });
+      await this.redis.set(key, serialized);
+      await this.redis.expire(key, 86400);
+    } catch (error) {
+      console.error("Error saving context:", error);
+      throw error;
+    }
+  }
+  async saveRawClient(clientId: string, context: RawMessageClientContext): Promise<void> {
     try {
       const key = `context:${clientId}`;
       const serialized = JSON.stringify(context, (k, v) => {

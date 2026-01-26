@@ -46,6 +46,8 @@
     "@google/generative-ai": "^0.24.1",
     "@langchain/core": "^1.1.17",
     "@langchain/google-genai": "^2.1.13",
+    "@langchain/mistralai": "^1.0.3",
+    "@langchain/ollama": "^1.2.1",
     "@langchain/openai": "^1.2.3",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/axios": "^4.0.1",

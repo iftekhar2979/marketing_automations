@@ -24,6 +24,35 @@ import { SeederService } from "./seeder/seeder.service";
 /**
  * function for bootstraping the nest application
  */
+
+export const clientInfo = [
+  {
+    name: "what_kind_of_project_do_you_have_in_mind?",
+    values: ["paver"],
+  },
+  {
+    name: "when_are_you_looking_to_get_started?",
+    values: ["next_week"],
+  },
+  {
+    name: "what's_the_best_time_for_us_to_call_you?",
+    values: ["evening"],
+  },
+  {
+    name: "full_name",
+    values: ["Salmin Rashid"],
+  },
+  {
+    name: "phone_number",
+    values: ["+8801712345678"],
+  },
+  {
+    name: "email",
+    values: ["salmin@example.com"],
+  },
+];
+const infos = JSON.stringify(clientInfo);
+
 async function bootstrap() {
   // Create the data source after secrets are loaded
   const dataSource = createDataSource();
@@ -35,7 +64,7 @@ async function bootstrap() {
     logger: ["error", "fatal", "log", "verbose", "warn", "debug"],
   });
   const configService = app.get<ConfigService>(ConfigService);
-
+  console.log(infos);
   // --- Add Redis Adapter ---
   const pubClient = createClient({ url: "redis://localhost:6379" });
   const subClient = pubClient.duplicate();
@@ -53,6 +82,7 @@ async function bootstrap() {
   );
   const seederService = app.get(SeederService);
   await seederService.seedAdminUser();
+
   // await seederService.seedFakeUsers();
   app.setGlobalPrefix("/api");
 
@@ -87,7 +117,7 @@ async function bootstrap() {
   app.use(compression());
   // app.use(json({ limit: "50kb" }));
   app.use(urlencoded({ extended: true, limit: "50kb" }));
-
+  // app.init()
   // app.disable("x-powered-by"); // provide an extra layer of obsecurity to reduce server fingerprinting.
   // app.set("trust proxy", 1); // trust first proxy
 

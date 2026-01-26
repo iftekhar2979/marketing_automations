@@ -1,3 +1,5 @@
+import { User } from "src/user/entities/user.entity";
+
 export interface DynamicFormField {
   name: string;
 
@@ -24,10 +26,10 @@ export interface UserInfo {
 
 export interface ClientContext {
   id: string;
-  formData: DynamicFormData;
-  userInfo: UserInfo;
+  formData?: { name: string; values: string[] }[];
+  userInfo: User;
   conversationHistory: Message[];
-  status: "greeting" | "information_gathering" | "appointment_scheduling" | "closing";
+  status: "greeting" | "information_gathering" | "appointment_scheduling" | "closing" | "conversation";
   collectedData: Map<string, string>;
   metadata: {
     startedAt: Date;
@@ -36,6 +38,18 @@ export interface ClientContext {
   };
 }
 
+export interface RawMessageClientContext {
+  id: string;
+  userInfo: User;
+  conversationHistory: Message[];
+  status: "greeting" | "information_gathering" | "appointment_scheduling" | "closing" | "conversation";
+  collectedData: Map<string, string>;
+  metadata: {
+    startedAt: Date;
+    lastActivityAt: Date;
+    sourceChannel: string;
+  };
+}
 export interface Message {
   role: "user" | "assistant";
   content: string;
