@@ -6,34 +6,46 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
 } from "typeorm";
-// Make sure this path is correct
-
+export enum MessageDirection {
+  OUTBOUND = "OUTBOUND", // user → lead
+  INBOUND = "INBOUND", // lead → user
+}
 @Entity("messages")
+@Index(["conversation_id", "created_at"])
 export class Messages {
   @ApiProperty({ example: 1, description: "Unique ID for the message" })
   @PrimaryGeneratedColumn()
   id: number;
 
   @ApiProperty({ example: "uuid-of-user", description: "User ID of sender" })
+  @Index()
   @Column({ type: "uuid" })
   sender_id: string;
 
+  @Column({
+    type: "enum",
+    enum: MessageDirection,
+  })
+  direction: MessageDirection;
+
   @ManyToOne(() => User, { onDelete: "CASCADE" })
   @JoinColumn({ name: "sender_id" })
-  sender: User;
-  @ApiProperty({ example: "1", description: "Offer Id" })
-  @Column({ nullable: true, unique: false })
-  offer_id: number;
-  @ApiProperty({ example: "1", description: "Offer Id" })
+  sender_user: User;
+
+  @ApiProperty({ example: "1", description: "Converstaion Id" })
   @Column({ nullable: true, unique: false })
   conversation_id: number;
 
+  // only set for inbound
+  @Column({ type: "varchar", nullable: true })
+  sender_phone?: string;
   @ApiProperty({ example: "Hello!", description: "Message text" })
   @Column({ type: "text", nullable: true })
   msg?: string;
@@ -49,11 +61,14 @@ export class Messages {
   @ApiProperty({ type: () => [MessageAttachment], description: "Message attachments" })
   @OneToMany(() => MessageAttachment, (attachment) => attachment.message, { cascade: true })
   attachments?: MessageAttachment[];
+
   @ApiProperty({ type: () => Boolean, description: "Message Seen", example: "true" })
   @Column()
+  @Index()
   isRead: boolean;
 
   @CreateDateColumn({ type: "timestamp with time zone" })
+  @Index()
   created_at: Date;
 
   @UpdateDateColumn({ type: "timestamp with time zone" })

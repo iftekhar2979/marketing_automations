@@ -11,13 +11,12 @@ import { ChatResponse, ClientContext, Message } from "./types/chatbot.types";
 export class ChatbotService {
   clientInfo;
   constructor(
-    private langchain: LangChainOpenAIService,
-    private memoryService: ConversationMemoryService,
-    private stateService: ConversationStateService,
+    private _langchain: LangChainOpenAIService,
+    private _memoryService: ConversationMemoryService,
+    private _stateService: ConversationStateService,
     @InjectLogger() private readonly _logger: Logger
   ) {
     this.clientInfo = clientInfo;
-    console.log("Client Info", this.clientInfo);
   }
 
   async chat(
@@ -28,10 +27,10 @@ export class ChatbotService {
   ): Promise<ChatResponse> {
     try {
       // 1. Get or initialize context
-      let context = await this.memoryService.getClientContext(clientId);
+      let context = await this._memoryService.getClientContext(clientId);
       this._logger.log("Already Exist context", context);
       if (!context) {
-        context = await this.stateService.initializeContext(clientId, formData, userInfo);
+        context = await this._stateService.initializeContext(clientId, formData, userInfo);
       }
 
       // 2. Save user message
@@ -41,21 +40,21 @@ export class ChatbotService {
         timestamp: new Date(),
       };
 
-      await this.memoryService.saveMessage(clientId, userMsg);
+      await this._memoryService.saveMessage(clientId, userMsg);
       context.conversationHistory.push(userMsg);
 
       // 3. Extract structured data
-      const extractedData = await this.langchain.extractStructuredData(userMessage, formData);
+      const extractedData = await this._langchain.extractStructuredData(userMessage, formData);
 
       extractedData.forEach((value, key) => {
         context.collectedData.set(key, value);
       });
       // 4. Determine next status
-      const nextStatus = await this.stateService.determineNextStatus(context);
+      const nextStatus = await this._stateService.determineNextStatus(context);
       context.status = nextStatus;
 
       // 5. Generate AI response
-      const aiResponse = await this.langchain.generateResponse(context, userMessage);
+      const aiResponse = await this._langchain.generateResponse(context, userMessage);
 
       console.log("AI Response:", aiResponse);
 
@@ -66,11 +65,11 @@ export class ChatbotService {
         timestamp: new Date(),
       };
 
-      await this.memoryService.saveMessage(clientId, assistantMsg);
+      await this._memoryService.saveMessage(clientId, assistantMsg);
       context.conversationHistory.push(assistantMsg);
 
       // 7. Persist context
-      await this.memoryService.saveClientContext(clientId, context);
+      await this._memoryService.saveClientContext(clientId, context);
 
       // 8. Return response
       return {
@@ -96,10 +95,10 @@ export class ChatbotService {
   async sendRawMessage(clientId: string, userMessage: string, userInfo: any): Promise<ChatResponse> {
     try {
       // 1. Get or initialize context
-      let context = await this.memoryService.getClientContext(clientId);
+      let context = await this._memoryService.getClientContext(clientId);
       this._logger.log("Already Exist context", context);
       if (!context) {
-        context = await this.stateService.initiateRawContext(clientId, userInfo);
+        context = await this._stateService.initiateRawContext(clientId, userInfo);
       }
 
       // 2. Save user message
@@ -109,21 +108,21 @@ export class ChatbotService {
         timestamp: new Date(),
       };
 
-      await this.memoryService.saveMessage(clientId, userMsg);
+      await this._memoryService.saveMessage(clientId, userMsg);
       context.conversationHistory.push(userMsg);
 
       // 3. Extract structured data
-      const extractedData = await this.langchain.extractStructuredInformation(userMessage);
+      const extractedData = await this._langchain.extractStructuredInformation(userMessage);
 
       extractedData.forEach((value, key) => {
         context.collectedData.set(key, value);
       });
       // 4. Determine next status
-      const nextStatus = await this.stateService.determineNextStatus(context);
+      const nextStatus = await this._stateService.determineNextStatus(context);
       context.status = nextStatus;
 
       // 5. Generate AI response
-      const aiResponse = await this.langchain.generateResponse(context, userMessage);
+      const aiResponse = await this._langchain.generateResponse(context, userMessage);
 
       console.log("AI Response:", aiResponse);
 
@@ -134,11 +133,11 @@ export class ChatbotService {
         timestamp: new Date(),
       };
 
-      await this.memoryService.saveMessage(clientId, assistantMsg);
+      await this._memoryService.saveMessage(clientId, assistantMsg);
       context.conversationHistory.push(assistantMsg);
 
       // 7. Persist context
-      await this.memoryService.saveClientContext(clientId, context);
+      await this._memoryService.saveClientContext(clientId, context);
 
       // 8. Return response
       return {
@@ -173,7 +172,7 @@ export class ChatbotService {
 
   private generateSuggestedQuestions(context: ClientContext): string[] {
     const questions: string[] = [];
-    const fieldStatus = this.stateService.getRequiredFieldsStatus(context);
+    const fieldStatus = this._stateService.getRequiredFieldsStatus(context);
 
     if (context.status === "greeting") {
       questions.push("Tell me about your project");
@@ -197,22 +196,22 @@ export class ChatbotService {
   }
 
   async getConversationHistory(clientId: string): Promise<Message[]> {
-    return this.memoryService.getConversationHistory(clientId);
+    return this._memoryService.getConversationHistory(clientId);
   }
 
   async getClientContext(clientId: string): Promise<ClientContext | null> {
-    return this.memoryService.getClientContext(clientId);
+    return this._memoryService.getClientContext(clientId);
   }
 
   async clearConversation(clientId: string): Promise<void> {
-    await this.memoryService.clearConversation(clientId);
+    await this._memoryService.clearConversation(clientId);
   }
 
   async getSessionStats(clientId: string): Promise<any> {
-    const context = await this.memoryService.getClientContext(clientId);
+    const context = await this._memoryService.getClientContext(clientId);
     if (!context) return null;
 
-    const fieldStatus = this.stateService.getRequiredFieldsStatus(context);
+    const fieldStatus = this._stateService.getRequiredFieldsStatus(context);
 
     return {
       clientId,

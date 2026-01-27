@@ -304,7 +304,7 @@ export class AuthService {
 
     this._logger.log("Searching User with provided email", AuthService.name);
     const user = await this._userRepository.findOne({ where: { email } });
-    // console.log(user);
+    console.log(user);
     this._logger.log("Verifying User", AuthService.name);
     if (user && (await argon2verify(user.password, password))) {
       const verification = await this._verificationRepository.findOne({ where: { user_id: user.id } });

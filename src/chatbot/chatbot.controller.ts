@@ -11,14 +11,14 @@ import { ChatRequestDto } from "./dto/ChatRequest.dto";
 
 @Controller("chatbot")
 export class ChatbotController {
-  constructor(private readonly chatbotService: ChatbotService) {}
+  constructor(private readonly _chatbotService: ChatbotService) {}
   @Post("message")
   @UsePipes(new ValidationPipe({ transform: true }))
   async handleChat(@Body() chatRequest: ChatRequestDto) {
     try {
       const { clientId, userMessage, formData, userInfo } = chatRequest;
 
-      const response = await this.chatbotService.chat(clientId, userMessage, formData, userInfo);
+      const response = await this._chatbotService.chat(clientId, userMessage, formData, userInfo);
 
       return response;
     } catch (error) {
@@ -35,7 +35,7 @@ export class ChatbotController {
     try {
       const { clientId, userMessage, userInfo } = chatRequest;
 
-      const response = await this.chatbotService.sendRawMessage(clientId, userMessage, userInfo);
+      const response = await this._chatbotService.sendRawMessage(clientId, userMessage, userInfo);
 
       return response;
     } catch (error) {

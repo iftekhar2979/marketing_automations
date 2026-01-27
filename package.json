@@ -12,6 +12,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "cross-env STAGE=dev nest start --watch",
+    "start:inspect": "cross-env STAGE=dev node --inspect=0.0.0.0:9229 node_modules/.bin/nest start --watch",
     "start:staging": "cross-env STAGE=staging nest start --watch",
     "start:uat": "STAGE=uat nest start --watch",
     "start:debug": "nest start --debug --watch",

@@ -5,7 +5,7 @@ import { ConversationMemoryService } from "./chat-conversation.service";
 
 @Injectable()
 export class ConversationStateService {
-  constructor(private memoryService: ConversationMemoryService) {}
+  constructor(private _memoryService: ConversationMemoryService) {}
 
   async initializeContext(
     clientId: string,
@@ -27,7 +27,7 @@ export class ConversationStateService {
       },
     };
 
-    await this.memoryService.saveClientContext(clientId, context);
+    await this._memoryService.saveClientContext(clientId, context);
     return context;
   }
   async initiateRawContext(clientId: string, userInfo: User): Promise<RawMessageClientContext> {
@@ -44,18 +44,18 @@ export class ConversationStateService {
       },
     };
 
-    await this.memoryService.saveRawClient(clientId, context);
+    await this._memoryService.saveRawClient(clientId, context);
     return context;
   }
 
   async updateContext(clientId: string, updates: Partial<ClientContext>): Promise<ClientContext> {
-    const context = await this.memoryService.getClientContext(clientId);
+    const context = await this._memoryService.getClientContext(clientId);
     if (!context) throw new Error("Client context not found");
 
     Object.assign(context, updates);
     context.metadata.lastActivityAt = new Date();
 
-    await this.memoryService.saveClientContext(clientId, context);
+    await this._memoryService.saveClientContext(clientId, context);
     return context;
   }
 

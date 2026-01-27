@@ -1,40 +1,50 @@
 import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { AttachmentService } from "src/attachment/attachment.service";
+import { ConversationsService } from "src/conversations/conversations.service";
+import { InjectLogger } from "src/shared/decorators/logger.decorator";
+import { SocketService } from "src/socket/socket.service";
+import { UserService } from "src/user/user.service";
+import { Repository } from "typeorm";
+import { Logger } from "winston";
+import { SendMessageDto } from "./dto/send-message.dto";
+import { Messages } from "./entities/messages.entity";
 
 @Injectable()
 export class MessagesService {
-  // constructor(
-  //   @InjectRepository(Messages)
-  //   private _messageRepo: Repository<Messages>,
-  //   private readonly _conversationService: ConversationsService,
-  //   private readonly _userService: UserService,
-  //   private readonly _attachmentService: AttachmentService,
-  //   private readonly _socketService: SocketService,
-  //   @InjectLogger() private readonly _logger: Logger
-  // ) {}
-  // async sendMessage(dto: SendMessageDto): Promise<Messages> {
-  //   try {
-  //     const conversation = await this._conversationService.getConversationId(dto.conversation_id);
-  //     const message = this._messageRepo.create({
-  //       msg: dto.msg,
-  //       type: dto.type ? dto.type : "text",
-  //       sender: dto.sender,
-  //       conversation,
-  //       isRead: false,
-  //     });
-  //     this._logger.log("Message Service", message);
-  //     const savedMessage = await this._messageRepo.save(message);
-  //     if (dto.attachments?.length) {
-  //       await this._attachmentService.addAttachments(savedMessage, dto.attachments);
-  //       return this._messageRepo.findOneOrFail({
-  //         where: { id: savedMessage.id },
-  //         relations: ["attachments"],
-  //       });
-  //     }
-  //     return savedMessage;
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }
+  constructor(
+    @InjectRepository(Messages)
+    private _messageRepo: Repository<Messages>,
+    private readonly _conversationService: ConversationsService,
+    private readonly _userService: UserService,
+    private readonly _attachmentService: AttachmentService,
+    private readonly _socketService: SocketService,
+    @InjectLogger() private readonly _logger: Logger
+  ) {}
+  async sendMessage(dto: SendMessageDto): Promise<Messages> {
+    try {
+      const conversation = await this._conversationService.getConversationId(dto.conversation_id);
+      const message = this._messageRepo.create({
+        msg: dto.msg,
+        type: dto.type ? dto.type : "text",
+        sender_user: dto.sender,
+        conversation,
+        isRead: false,
+      });
+      this._logger.log("Message Service", message);
+      const savedMessage = await this._messageRepo.save(message);
+      if (dto.attachments?.length) {
+        await this._attachmentService.addAttachments(savedMessage, dto.attachments);
+        return this._messageRepo.findOneOrFail({
+          where: { id: savedMessage.id },
+          relations: ["attachments"],
+        });
+      }
+      return savedMessage;
+    } catch (error) {
+      console.log(error);
+    }
+  }
   // async seenMessages({ conversation_id }: { conversation_id: number }) {
   //   const updateResult = await this._messageRepo
   //     .createQueryBuilder()

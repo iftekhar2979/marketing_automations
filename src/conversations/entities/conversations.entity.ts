@@ -6,30 +6,27 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from "typeorm";
+@Index(["updated_at"])
+@Index(["lead_phone", "updated_at"])
 @Entity("conversations")
 export class Conversations {
   @ApiProperty({ example: 1, description: "Unique ID for the conversation" })
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ApiProperty({ example: "iPhone 11 (Iftekhar - John)", description: "Conversation Name" })
-  @Column({ nullable: false })
-  name: string;
-
-  @ApiProperty({ example: "https://example.com/image.jpg", description: "Conversation image URL" })
-  @Column({ nullable: true })
-  image?: string;
-
   @ApiProperty({ description: "Last Message" })
+  @Index()
   @OneToOne(() => Messages, { onDelete: "CASCADE" })
   @JoinColumn({ name: "lastmsg" })
   lastmsg: Messages;
+
   @ApiProperty({ type: () => [Messages], description: "Messages in the conversation" })
   @OneToMany(() => Messages, (message) => message.conversation, { cascade: true })
   messages: Messages[];
@@ -37,6 +34,10 @@ export class Conversations {
   @ApiProperty({ type: () => [User], description: "Users participating in the conversation" })
   @OneToMany(() => ConversationParticipant, (p) => p.conversation)
   participants: ConversationParticipant[];
+
+  @Index()
+  @Column({ type: "varchar", length: 20 })
+  lead_phone: string; // denormalized for fast routing
 
   @ApiProperty({ description: "Conversation creation timestamp" })
   @CreateDateColumn({ type: "timestamp with time zone" })

@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { RedisService } from "src/redis/redis.service";
 import { ClientContext, Message, RawMessageClientContext } from "../types/chatbot.types";
-
 @Injectable()
 export class ConversationMemoryService {
   private redis;
@@ -19,6 +18,7 @@ export class ConversationMemoryService {
     try {
       const key = `conversation:${clientId}`;
       await this.redis.lPush(key, JSON.stringify(message));
+
       await this.redis.expire(key, 86400); // 24 hours TTL
     } catch (error) {
       console.error("Error saving message:", error);
