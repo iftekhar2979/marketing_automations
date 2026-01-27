@@ -4,9 +4,11 @@ import { JwtModule } from "@nestjs/jwt";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { AgencyProfilesModule } from "src/agency_profiles/agency_profiles.module";
 import { ChatbotModule } from "src/chatbot/chatbot.module";
+import { ConversationsModule } from "src/conversations/conversations.module";
 import { FirebaseModule } from "src/firebase/firebase.module";
 import { LeadsInfoModule } from "src/leads_info/leads_info.module";
 import { MailModule } from "src/mail/mail.module";
+import { MessagesModule } from "src/messages/messages.module";
 import { NotificationsModule } from "src/notifications/notifications.module";
 import { OtpModule } from "src/otp/otp.module";
 import { User } from "src/user/entities/user.entity";
@@ -19,7 +21,6 @@ import { AuthQueueProcessor } from "./processors/AuthenticationQueue";
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Verification]),
-    ,
     MailModule,
     FirebaseModule,
     NotificationsModule,
@@ -40,7 +41,10 @@ import { AuthQueueProcessor } from "./processors/AuthenticationQueue";
         };
       },
     }),
+    ConversationsModule,
+    MessagesModule,
     ChatbotModule,
+    MessagesModule,
   ],
   providers: [BullService, AuthQueueProcessor],
   controllers: [BullController],

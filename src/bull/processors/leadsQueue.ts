@@ -2,7 +2,9 @@ import { Process, Processor } from "@nestjs/bull";
 import { Job } from "bull";
 import { AgencyProfilesService } from "src/agency_profiles/agency_profiles.service";
 import { ChatbotService } from "src/chatbot/chatbot.service";
+import { ConversationsService } from "src/conversations/conversations.service";
 import { LeadsInfoService } from "src/leads_info/leads_info.service";
+import { MessagesService } from "src/messages/messages.service";
 import { PageSessionService } from "src/page_session/page_session.service";
 import { Field, LeadProfile } from "src/page_session/types/leadgen.types";
 import { RedisService } from "src/redis/redis.service";
@@ -16,7 +18,9 @@ export class LeadsQueueProcessor {
     private readonly _userService: UserService,
     private readonly _metaBuisnesService: PageSessionService,
     private readonly _leadsService: LeadsInfoService,
-    private readonly _chatbotService: ChatbotService
+    private readonly _chatbotService: ChatbotService,
+    private readonly _conversationService: ConversationsService,
+    private readonly _messageService: MessagesService
   ) {}
   @Process("seed")
   async seedLead(
@@ -28,13 +32,9 @@ export class LeadsQueueProcessor {
       field_data: Field[];
     }>
   ) {
-    console.log("joB rUN sUCESSFULLY");
     const { page_id, lead_id, form_id, field_data, destructedLeadsInfo } = job.data;
-    console.log("Distruction Issue", job.data);
     const { firstName, lastName, name, email, phone, zipCode, postalCode } = destructedLeadsInfo;
-    console.log("Distruction Issue=2");
     const pageInfo = await this._metaBuisnesService.findByPageId(page_id);
-    console.log("Page Information", pageInfo);
     const leadsField = JSON.stringify(field_data);
     const lead = await this._leadsService.createLead({
       page_id,
@@ -46,17 +46,16 @@ export class LeadsQueueProcessor {
       phone,
       form_info: leadsField,
     });
-    console.log("Message Processsing");
-    // const result = await this._chatbotService.chat(
-    //   lead_id,
-    //   `Hi My Information is`,
-    //   {
-    //     formId: form_id,
-    //     fields: field_data,
-    //     formName: "Lead Information",
-    //   },
-    //   pageInfo.users
-    // );
-    // console.log(result);
+    const user = pageInfo.users;
+    console.log("User", pageInfo);
+    const conversations = await this._conversationService.createConversation({ lead, user: pageInfo.users });
+    const result = await this._chatbotService.chat(
+      lead.id,
+      "Hey , I have provided my informations.If you need anything you can ask me .",
+      field_data,
+      pageInfo
+    );
+
+    await this._messageService.sendMessage({ sender: user, conversation_id: conversations.id });
   }
 }

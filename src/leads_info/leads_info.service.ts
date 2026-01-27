@@ -46,5 +46,6 @@ export class LeadsInfoService {
       ...otherFields,
     });
     await this._leadRepository.save(lead);
+    return lead;
   }
 }

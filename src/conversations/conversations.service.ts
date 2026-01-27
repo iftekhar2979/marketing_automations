@@ -37,8 +37,13 @@ export class ConversationsService {
       const conversation = await this._participantService.createParticipant(lead, queryRunner, user);
       await this.createConversations(lead, queryRunner, conversation);
       await queryRunner.commitTransaction();
+      return conversation;
     } catch (error) {
       console.log(error);
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      queryRunner.release();
     }
   }
 

@@ -43,6 +43,7 @@ export class MessagesService {
       return savedMessage;
     } catch (error) {
       console.log(error);
+      throw error;
     }
   }
   // async seenMessages({ conversation_id }: { conversation_id: number }) {

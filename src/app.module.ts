@@ -38,8 +38,10 @@ import { OtpQueueProcessor } from "./bull/processors/OtpQueue";
 import { UploadProcessor } from "./bull/processors/uploadQueue";
 import { ChatbotModule } from "./chatbot/chatbot.module";
 import { ContructorsModule } from "./contructors/contructors.module";
+import { ConversationsModule } from "./conversations/conversations.module";
 import { LangChainOpenAiModule } from "./lang-chain-open-ai/lang-chain-open-ai.module";
 import { LeadsInfoModule } from "./leads_info/leads_info.module";
+import { MessagesModule } from "./messages/messages.module";
 import { NotificationsModule } from "./notifications/notifications.module";
 import { PageSessionModule } from "./page_session/page_session.module";
 import { SeederService } from "./seeder/seeder.service";
@@ -123,6 +125,8 @@ import { WebhookModule } from "./webhook/webhook.module";
     ContructorsModule,
     LangChainOpenAiModule,
     ChatbotModule,
+    ConversationsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [

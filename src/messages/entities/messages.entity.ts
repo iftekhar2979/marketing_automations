@@ -26,7 +26,7 @@ export class Messages {
 
   @ApiProperty({ example: "uuid-of-user", description: "User ID of sender" })
   @Index()
-  @Column({ type: "uuid" })
+  @Column({ type: "uuid", nullable: true })
   sender_id: string;
 
   @Column({
@@ -46,9 +46,11 @@ export class Messages {
   // only set for inbound
   @Column({ type: "varchar", nullable: true })
   sender_phone?: string;
+
   @ApiProperty({ example: "Hello!", description: "Message text" })
   @Column({ type: "text", nullable: true })
   msg?: string;
+
   @ApiProperty({ example: "Text", description: "Text | Image | Offer" })
   @Column({ type: "text", nullable: true })
   type?: "text" | "offer" | "image" | "video";
