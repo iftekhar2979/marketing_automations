@@ -136,6 +136,7 @@ export class WebhookController {
               access_token: validate_page.data[page_id].access_token,
               lead_id,
             });
+            console.log(validate_lead);
             await this._webhookService.handleMetaWebhhook({
               page_id,
               lead_id,

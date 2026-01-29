@@ -1,11 +1,19 @@
 import { Injectable } from "@nestjs/common";
 import { LangChainOpenAIService } from "src/lang-chain-open-ai/lang-chain-open-ai.service";
 import { clientInfo } from "src/main";
+import { MetaBuisnessProfiles } from "src/page_session/entites/meta_buisness.entity";
 import { InjectLogger } from "src/shared/decorators/logger.decorator";
 import { Logger } from "winston";
 import { ConversationMemoryService } from "./services/chat-conversation.service";
 import { ConversationStateService } from "./services/conversation-state.service";
-import { ChatResponse, ClientContext, Message } from "./types/chatbot.types";
+import {
+  ChatResponse,
+  ClientContext,
+  FormFieldMessageClientContext,
+  Message,
+  RawMessageClientContext,
+} from "./types/chatbot.types";
+import { ChatbotUtilsService } from "./utils/chatbot.utils.service";
 
 @Injectable()
 export class ChatbotService {
@@ -14,6 +22,7 @@ export class ChatbotService {
     private _langchain: LangChainOpenAIService,
     private _memoryService: ConversationMemoryService,
     private _stateService: ConversationStateService,
+    private _chatbotUtils: ChatbotUtilsService,
     @InjectLogger() private readonly _logger: Logger
   ) {
     this.clientInfo = clientInfo;
@@ -23,7 +32,7 @@ export class ChatbotService {
     clientId: string,
     userMessage: string,
     formData: { name: string; values: string[] }[],
-    userInfo: any
+    userInfo: MetaBuisnessProfiles
   ): Promise<ChatResponse> {
     try {
       // 1. Get or initialize context
@@ -170,7 +179,9 @@ export class ChatbotService {
     return actions[status];
   }
 
-  private generateSuggestedQuestions(context: ClientContext): string[] {
+  private generateSuggestedQuestions(
+    context: RawMessageClientContext | FormFieldMessageClientContext
+  ): string[] {
     const questions: string[] = [];
     const fieldStatus = this._stateService.getRequiredFieldsStatus(context);
 
@@ -212,7 +223,7 @@ export class ChatbotService {
     if (!context) return null;
 
     const fieldStatus = this._stateService.getRequiredFieldsStatus(context);
-
+    const userInformation = this._chatbotUtils.extractClientUserInfo(context);
     return {
       clientId,
       status: context.status,
@@ -223,7 +234,7 @@ export class ChatbotService {
       fieldsCollected: fieldStatus.collected,
       totalFieldsRequired: fieldStatus.total,
       collectionProgress: `${Math.round((fieldStatus.collected / fieldStatus.total) * 100)}%`,
-      representative: context.userInfo.first_name + context.userInfo.last_name,
+      representative: userInformation.first_name + userInformation.last_name,
       collectedData: Object.fromEntries(context.collectedData),
     };
   }

@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Conversations } from "src/conversations/entities/conversations.entity";
 import { Lead } from "src/leads_info/entities/lead.entity";
 import { User } from "src/user/entities/user.entity";
-import { EntityManager, Repository } from "typeorm";
+import { EntityManager, QueryRunner, Repository } from "typeorm";
 import { ConversationParticipant } from "./entities/participants.entity";
 
 @Injectable()
@@ -20,9 +20,27 @@ export class ParticipantsService {
     const participant = this.participantRepo.create({ conversation, user });
     return this.participantRepo.save(participant);
   }
-  async createParticipant(lead: Lead, queryRunner, user: User) {
-    return await queryRunner.manager.create(ConversationParticipant, { user, lead });
+  async createParticipantEntity(
+    queryRunner: QueryRunner,
+    conversation: Conversations,
+    user: User,
+    lead: Lead
+  ) {
+    const participantRepo = queryRunner.manager.getRepository(ConversationParticipant);
+
+    // Ensure all values are defined to avoid UpdateValuesMissingError
+    const participant = participantRepo.create({
+      conversation: conversation,
+      user: user,
+      lead: lead,
+      lead_phone: lead.phone ?? null,
+      lead_email: lead.email ?? null,
+      isMuted: false,
+    });
+    console.log(participant);
+    return await queryRunner.manager.save(participant);
   }
+
   async addMultiple(conversation: Conversations, users: User[], manager?: EntityManager) {
     const participants = users.map((user) => ({
       user,

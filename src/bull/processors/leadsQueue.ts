@@ -4,6 +4,7 @@ import { AgencyProfilesService } from "src/agency_profiles/agency_profiles.servi
 import { ChatbotService } from "src/chatbot/chatbot.service";
 import { ConversationsService } from "src/conversations/conversations.service";
 import { LeadsInfoService } from "src/leads_info/leads_info.service";
+import { MessageDirection } from "src/messages/entities/messages.entity";
 import { MessagesService } from "src/messages/messages.service";
 import { PageSessionService } from "src/page_session/page_session.service";
 import { Field, LeadProfile } from "src/page_session/types/leadgen.types";
@@ -46,16 +47,20 @@ export class LeadsQueueProcessor {
       phone,
       form_info: leadsField,
     });
-    const user = pageInfo.users;
+    const user = pageInfo.users[0];
     console.log("User", pageInfo);
-    const conversations = await this._conversationService.createConversation({ lead, user: pageInfo.users });
+    const conversations = await this._conversationService.createConversation({ lead, user });
+    console.log("conversation", conversations);
     const result = await this._chatbotService.chat(
       lead.id,
       "Hey , I have provided my informations.If you need anything you can ask me .",
       field_data,
       pageInfo
     );
-
-    await this._messageService.sendMessage({ sender: user, conversation_id: conversations.id });
+    await this._messageService.sendMessage({
+      sender: user,
+      conversation_id: conversations.id,
+      direction: MessageDirection.INBOUND,
+    });
   }
 }

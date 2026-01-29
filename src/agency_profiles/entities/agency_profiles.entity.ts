@@ -1,4 +1,5 @@
 import { ApiProperty } from "@nestjs/swagger";
+import { Lead } from "src/leads_info/entities/lead.entity";
 import { MetaBuisnessProfiles } from "src/page_session/entites/meta_buisness.entity";
 import { User } from "src/user/entities/user.entity";
 import {
@@ -9,6 +10,7 @@ import {
   Index,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -114,6 +116,8 @@ export class AgencyProfile {
   @JoinColumn({ name: "agency_owner_id" })
   agency_owner: User;
 
+  @OneToMany(() => Lead, (lead) => lead.agency)
+  leads: Lead[];
   // One-to-one: One Business Profile has one Agency Profiles
 
   // ============ TIMESTAMPS ============

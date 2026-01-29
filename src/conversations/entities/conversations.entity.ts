@@ -23,9 +23,9 @@ export class Conversations {
 
   @ApiProperty({ description: "Last Message" })
   @Index()
-  @OneToOne(() => Messages, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "lastmsg" })
-  lastmsg: Messages;
+  @OneToOne(() => Messages, { onDelete: "SET NULL", nullable: true })
+  @JoinColumn({ name: "lastmsg_id" })
+  lastmsg: Messages | null;
 
   @ApiProperty({ type: () => [Messages], description: "Messages in the conversation" })
   @OneToMany(() => Messages, (message) => message.conversation, { cascade: true })
@@ -36,8 +36,12 @@ export class Conversations {
   participants: ConversationParticipant[];
 
   @Index()
-  @Column({ type: "varchar", length: 20 })
-  lead_phone: string; // denormalized for fast routing
+  @Column({ type: "varchar", length: 20, nullable: true })
+  lead_phone: string | null; // denormalized for fast routing
+
+  @Index()
+  @Column({ type: "varchar", length: 40, nullable: true })
+  lead_email: string | null; // denormalized for fast routing
 
   @ApiProperty({ description: "Conversation creation timestamp" })
   @CreateDateColumn({ type: "timestamp with time zone" })

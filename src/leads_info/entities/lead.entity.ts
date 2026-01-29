@@ -1,4 +1,4 @@
-import { User } from "src/user/entities/user.entity";
+import { AgencyProfile } from "src/agency_profiles/entities/agency_profiles.entity";
 import {
   Column,
   CreateDateColumn,
@@ -20,10 +20,15 @@ export class Lead {
   @Column({ name: "meta_lead_id", type: "varchar", nullable: true })
   @Index()
   meta_lead_id: string;
-
   @Column({ name: "agency_id", type: "uuid", nullable: true })
-  @Index()
   agency_id: string;
+
+  @ManyToOne(() => AgencyProfile, (agency) => agency.leads, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
+  @JoinColumn({ name: "agency_id" })
+  agency: AgencyProfile;
 
   @Column({ name: "contructor_id", type: "uuid", nullable: true })
   @Index()
@@ -63,14 +68,6 @@ export class Lead {
 
   @Column({ name: "is_used", type: "boolean", default: false })
   is_used: boolean;
-
-  //relation between leads and agency .
-  @ManyToOne(() => User, (user) => user.leads, {
-    nullable: true,
-    onDelete: "SET NULL",
-  })
-  @JoinColumn({ name: "agency_id" })
-  agency: User;
 
   //date columns
   @CreateDateColumn({ name: "created_at", type: "timestamp" })

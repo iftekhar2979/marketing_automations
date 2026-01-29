@@ -1,7 +1,8 @@
-import { IsUUID, IsInt, IsOptional, IsString, IsArray, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
+import { IsArray, IsEnum, IsInt, IsOptional, IsString, IsUUID, ValidateNested } from "class-validator";
 import { AttachmentDto } from "src/attachment/dto/attachments.dto";
 import { User } from "src/user/entities/user.entity";
+import { MessageDirection } from "../entities/messages.entity";
 
 export class SendMessageDto {
   @IsUUID()
@@ -14,6 +15,8 @@ export class SendMessageDto {
   @IsString()
   msg?: string;
 
+  @IsEnum(["OUTBOUND", "INBOUND"])
+  direction?: MessageDirection;
   @IsOptional()
   @IsString()
   type?: "text" | "image" | "video" | "offer";

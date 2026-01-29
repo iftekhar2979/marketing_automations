@@ -1,6 +1,11 @@
 import { Injectable } from "@nestjs/common";
+import { MetaBuisnessProfiles } from "src/page_session/entites/meta_buisness.entity";
 import { User } from "src/user/entities/user.entity";
-import { ClientContext, RawMessageClientContext } from "../types/chatbot.types";
+import {
+  ClientContext,
+  FormFieldMessageClientContext,
+  RawMessageClientContext,
+} from "../types/chatbot.types";
 import { ConversationMemoryService } from "./chat-conversation.service";
 
 @Injectable()
@@ -10,10 +15,10 @@ export class ConversationStateService {
   async initializeContext(
     clientId: string,
     formData: { name: string; values: string[] }[],
-    userInfo: User,
+    userInfo: MetaBuisnessProfiles,
     sourceChannel: string = "website"
-  ): Promise<ClientContext> {
-    const context: ClientContext = {
+  ): Promise<ClientContext<MetaBuisnessProfiles>> {
+    const context: ClientContext<MetaBuisnessProfiles> = {
       id: clientId,
       formData,
       userInfo,
@@ -48,7 +53,10 @@ export class ConversationStateService {
     return context;
   }
 
-  async updateContext(clientId: string, updates: Partial<ClientContext>): Promise<ClientContext> {
+  async updateContext(
+    clientId: string,
+    updates: Partial<FormFieldMessageClientContext>
+  ): Promise<FormFieldMessageClientContext | RawMessageClientContext> {
     const context = await this._memoryService.getClientContext(clientId);
     if (!context) throw new Error("Client context not found");
 
@@ -59,7 +67,9 @@ export class ConversationStateService {
     return context;
   }
 
-  async determineNextStatus(context: ClientContext): Promise<ClientContext["status"]> {
+  async determineNextStatus(
+    context: FormFieldMessageClientContext | RawMessageClientContext
+  ): Promise<FormFieldMessageClientContext["status"] | RawMessageClientContext["status"]> {
     const requiredFields = context.formData.filter((f) => f.name);
     const collectedCount = requiredFields.filter((f) => context.collectedData.has(f.name)).length;
     const collectionProgress = collectedCount / requiredFields.length;
@@ -70,7 +80,7 @@ export class ConversationStateService {
     return "closing";
   }
 
-  getRequiredFieldsStatus(context: ClientContext): {
+  getRequiredFieldsStatus(context: FormFieldMessageClientContext | RawMessageClientContext): {
     total: number;
     collected: number;
     remaining: string[];

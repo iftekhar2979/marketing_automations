@@ -7,14 +7,23 @@ import {
 import { ChatOllama } from "@langchain/ollama";
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { ClientContext, DynamicFormField, Message } from "src/chatbot/types/chatbot.types";
+import {
+  DynamicFormField,
+  FormFieldMessageClientContext,
+  Message,
+  RawMessageClientContext,
+} from "src/chatbot/types/chatbot.types";
+import { ChatbotUtilsService } from "src/chatbot/utils/chatbot.utils.service";
 @Injectable()
 export class LangChainOpenAIService {
   // private llm: ChatGoogleGenerativeAI;
   private llm: ChatOllama;
   private systemPrompt: ChatPromptTemplate;
 
-  constructor(private _configService: ConfigService) {
+  constructor(
+    private _configService: ConfigService,
+    private _chatbotUtils: ChatbotUtilsService
+  ) {
     this.initializeLLM();
     this.initializeSystemPrompt();
   }
@@ -98,14 +107,18 @@ Remember: You are {representativeName} from {agency}, not a generic chatbot.
     }
     return "Client";
   };
-  async generateResponse(clientContext: ClientContext, userMessage: string): Promise<string> {
+  async generateResponse(
+    clientContext: RawMessageClientContext | FormFieldMessageClientContext,
+    userMessage: string
+  ): Promise<string> {
     try {
+      const clientUserInfo = this._chatbotUtils.extractClientUserInfo(clientContext);
       const prompt = await this.systemPrompt.formatPromptValue({
-        representativeName: clientContext.userInfo.first_name + clientContext.userInfo.last_name,
-        agency: clientContext.userInfo.buisness_profiles.buisness_name,
-        representativeEmail: clientContext.userInfo.email,
-        representativePhone: clientContext.userInfo.phone,
-        representativeBio: clientContext.userInfo.buisness_profiles.buisness_category || "Not specified",
+        representativeName: clientUserInfo.first_name + clientUserInfo.last_name,
+        agency: clientUserInfo.buisness_name,
+        representativeEmail: clientUserInfo.email,
+        representativePhone: clientUserInfo.phone,
+        representativeBio: clientUserInfo.buisness_category || "Not specified",
         sourceChannel: clientContext.metadata.sourceChannel,
         currentStatus: clientContext.status,
         clientName: this.getClientName(clientContext.collectedData),

@@ -26,6 +26,7 @@ export class MessagesService {
       const conversation = await this._conversationService.getConversationId(dto.conversation_id);
       const message = this._messageRepo.create({
         msg: dto.msg,
+        direction: dto.direction,
         type: dto.type ? dto.type : "text",
         sender_user: dto.sender,
         conversation,

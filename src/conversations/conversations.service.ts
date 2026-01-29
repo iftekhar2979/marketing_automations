@@ -31,27 +31,59 @@ export class ConversationsService {
   }
   async createConversation({ lead, user }: { lead: Lead; user: User }) {
     const queryRunner = this._dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    // await queryRunner.connect();
+    // await queryRunner.startTransaction();
+
     try {
-      const conversation = await this._participantService.createParticipant(lead, queryRunner, user);
-      await this.createConversations(lead, queryRunner, conversation);
-      await queryRunner.commitTransaction();
-      return conversation;
+      // Step 1: Initialize Conversation
+      // We use .create() to prepare the object with default values
+      // We use .create() so TypeORM handles column defaults properly
+      const conversationEntity = queryRunner.manager.create(Conversations, {
+        lead_phone: lead.phone ?? null,
+        lead_email: lead.email ?? null,
+        lead,
+        user,
+        // We explicitly omit lastmsg here as it's null by default
+      });
+
+      // 2. Save and capture the returned entity (with the generated ID)
+      const savedConversation = await queryRunner.manager.save(conversationEntity);
+      console.log(savedConversation, user, lead);
+      // Step 3: Create Participant using the SAME manager
+      // Passing the manager directly ensures the transaction context is preserved
+      // await this._participantService.createParticipantEntity(queryRunner, savedConversation, user, lead);
+      const participant = queryRunner.manager.create(ConversationParticipant, {
+        conversation: savedConversation,
+        lead: lead,
+        user: user,
+        lead_phone: lead.phone ?? null,
+        lead_email: lead.email ?? null,
+        isMuted: false,
+      });
+      await queryRunner.manager.save(participant);
+      // await queryRunner.commitTransaction();
+      return savedConversation;
     } catch (error) {
-      console.log(error);
-      await queryRunner.rollbackTransaction();
+      // await queryRunner.rollbackTransaction();
+      console.error("Transaction failed, rolling back:", error);
       throw error;
     } finally {
-      queryRunner.release();
+      // await queryRunner.release();
     }
   }
 
-  async createConversations(lead: Lead, queryRunner: QueryRunner, conversation: ConversationParticipant) {
-    return await queryRunner.manager.create(Conversations, {
-      participants: [conversation],
-      lead_phone: lead.phone,
+  async createConversationEntity(lead: Lead, queryRunner: QueryRunner): Promise<Conversations> {
+    const conversation = queryRunner.manager.create(Conversations, {
+      lead_phone: lead.phone ?? null,
+      lead_email: lead.email ?? null,
+      lastmsg: null, // no message yet
     });
+
+    return queryRunner.manager.save(conversation);
+  }
+  async updateLastMessage(conversation: Conversations, message: Messages): Promise<Conversations> {
+    conversation.lastmsg = message;
+    return this._dataSource.manager.save(conversation); // safe, no UpdateValuesMissingError
   }
   async updatedConversation({
     conversation_id,

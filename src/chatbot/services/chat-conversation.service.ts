@@ -1,7 +1,12 @@
 import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { RedisService } from "src/redis/redis.service";
-import { ClientContext, Message, RawMessageClientContext } from "../types/chatbot.types";
+import {
+  ClientContext,
+  FormFieldMessageClientContext,
+  Message,
+  RawMessageClientContext,
+} from "../types/chatbot.types";
 @Injectable()
 export class ConversationMemoryService {
   private redis;
@@ -68,7 +73,9 @@ export class ConversationMemoryService {
     }
   }
 
-  async getClientContext(clientId: string): Promise<ClientContext | null> {
+  async getClientContext(
+    clientId: string
+  ): Promise<FormFieldMessageClientContext | RawMessageClientContext | null> {
     try {
       const key = `context:${clientId}`;
       const data = await this.redis.get(key);
@@ -79,7 +86,24 @@ export class ConversationMemoryService {
       context.metadata.startedAt = new Date(context.metadata.startedAt);
       context.metadata.lastActivityAt = new Date(context.metadata.lastActivityAt);
 
-      return context as ClientContext;
+      return context;
+    } catch (error) {
+      console.error("Error retrieving context:", error);
+      return null;
+    }
+  }
+  async getRawClientContext(clientId: string): Promise<RawMessageClientContext | null> {
+    try {
+      const key = `context:${clientId}`;
+      const data = await this.redis.get(key);
+      if (!data) return null;
+
+      const context = JSON.parse(data);
+      context.collectedData = new Map(Object.entries(context.collectedData || {}));
+      context.metadata.startedAt = new Date(context.metadata.startedAt);
+      context.metadata.lastActivityAt = new Date(context.metadata.lastActivityAt);
+
+      return context as RawMessageClientContext;
     } catch (error) {
       console.error("Error retrieving context:", error);
       return null;
